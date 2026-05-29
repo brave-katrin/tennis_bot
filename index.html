@@ -1,0 +1,298 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Теннисный Клуб</title>
+    <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <style>
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 400px; }
+        h2 { text-align: center; margin-bottom: 10px;}
+        h3 { margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: var(--tg-theme-hint-color); margin-bottom: 25px; font-size: 14px; }
+        
+        .btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #ffffff); border: none; border-radius: 10px; font-size: 16px; font-weight: 500; cursor: pointer; }
+        .btn-outline { background-color: transparent; color: var(--tg-theme-button-color, #3390ec); border: 2px solid var(--tg-theme-button-color, #3390ec); }
+        .btn-back { background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000); margin-top: 20px; }
+
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; color: var(--tg-theme-hint-color); }
+        input, select { width: 100%; padding: 12px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 8px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); box-sizing: border-box; font-size: 15px; }
+
+        .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .time-slot { padding: 10px; text-align: center; border: 1px solid var(--tg-theme-button-color, #3390ec); border-radius: 8px; color: var(--tg-theme-text-color, #000); cursor: pointer; font-size: 14px; }
+        .time-slot.selected { background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #ffffff); }
+        .time-slot.occupied { border-color: #e64646; color: #e64646; background-color: rgba(230, 70, 70, 0.05); cursor: not-allowed; }
+        .time-slot.admin-block { border-color: #ff9800; color: #ff9800; background-color: rgba(255, 152, 0, 0.1); }
+        .time-slot span { display: block; font-size: 11px; opacity: 0.8; }
+        
+        .hidden { display: none !important; }
+        .admin-badge { background: #ff9800; color: #fff; padding: 5px 10px; border-radius: 5px; font-size: 12px; display: inline-block; margin-bottom: 15px;}
+        
+        /* Лоадер */
+        #loader { text-align: center; color: var(--tg-theme-hint-color); font-weight: bold; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    
+    <!-- АВТОРИЗАЦИЯ -->
+    <div id="auth-screen">
+        <h2>Регистрация 🎾</h2>
+        <p class="subtitle">Оставьте ваш телефон для связи. <br><small>(Введите 7777777777 для панели Админа)</small></p>
+        <div class="form-group">
+            <input type="tel" id="user-phone" placeholder="Ваш телефон">
+        </div>
+        <button class="btn" id="login-btn" onclick="login()">Продолжить</button>
+        <div id="loader" class="hidden">🔄 Загрузка расписания...</div>
+    </div>
+
+    <!-- МЕНЮ -->
+    <div id="main-screen" class="hidden">
+        <h2>Главное меню</h2>
+        <p class="subtitle">Выберите нужную услугу:</p>
+        <button class="btn" onclick="showScreen('court-booking-screen')">📅 Аренда корта</button>
+        <button class="btn" onclick="showScreen('coach-screen')">💪 С тренером</button>
+        <button class="btn btn-outline hidden" id="admin-btn" onclick="showScreen('admin-screen')">⚙️ Панель Администратора</button>
+    </div>
+
+    <!-- АРЕНДА КОРТА -->
+    <div id="court-booking-screen" class="hidden">
+        <h2>Аренда корта</h2>
+        <div class="form-group">
+            <label>Выберите корт:</label>
+            <select id="court-select" onchange="generateSlots('court')">
+                <option value="Корт 1">Корт 1 (Грунт)</option>
+                <option value="Корт 2">Корт 2 (Хард)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Выберите дату:</label>
+            <input type="date" id="court-date" onchange="generateSlots('court')">
+        </div>
+        <div class="form-group hidden" id="court-slots-container">
+            <label>Доступное время:</label>
+            <div class="time-grid" id="court-time-grid"></div>
+        </div>
+        <button class="btn" onclick="submitData('court')">Забронировать</button>
+        <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
+    </div>
+
+    <!-- ЗАПИСЬ К ТРЕНЕРУ -->
+    <div id="coach-screen" class="hidden">
+        <h2>Запись к тренеру</h2>
+        <div class="form-group">
+            <label>Выберите тренера:</label>
+            <select id="coach-select" onchange="generateSlots('coach')">
+                <option value="Галина">Галина (на Корте 1)</option>
+                <option value="Наталья">Наталья (на Корте 2)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Выберите дату:</label>
+            <input type="date" id="coach-date" onchange="generateSlots('coach')">
+        </div>
+        <div class="form-group hidden" id="coach-slots-container">
+            <label>Доступное время:</label>
+            <div class="time-grid" id="coach-time-grid"></div>
+        </div>
+        <button class="btn" onclick="submitData('coach')">Записаться</button>
+        <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
+    </div>
+
+    <!-- ПАНЕЛЬ АДМИНА -->
+    <div id="admin-screen" class="hidden">
+        <div class="admin-badge">Режим управления расписанием</div>
+        <h2>Блокировка слотов</h2>
+        <p class="subtitle">Нажмите на свободный слот, чтобы закрыть его.</p>
+        
+        <div class="form-group">
+            <label>Кого/Что редактируем?</label>
+            <select id="admin-target" onchange="generateAdminSlots()">
+                <option value="Корт 1">Корт 1</option>
+                <option value="Корт 2">Корт 2</option>
+                <option value="Галина">Тренер: Галина</option>
+                <option value="Наталья">Тренер: Наталья</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Дата:</label>
+            <input type="date" id="admin-date" onchange="generateAdminSlots()">
+        </div>
+        <div class="time-grid" id="admin-time-grid"></div>
+        <button class="btn btn-back" onclick="showScreen('main-screen')">В главное меню</button>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.expand();
+
+    // Ссылка на вашу Google Таблицу
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznuVxui07UaJuTPuXhW-RQOADR7xHqTB7Lg3OkdsADcRHlxEAB0S1MVA3ZHOxTJ7o8/exec';
+
+    let userPhone = "";
+    let selectedTime = "";
+    let globalBookings = []; // Сюда загрузится база данных
+    const baseTimeSlots = ["09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:00", "19:30"];
+
+    window.onload = function() {
+        const today = new Date().toISOString().split('T')[0];
+        document.getElementById('court-date').min = today;
+        document.getElementById('coach-date').min = today;
+        document.getElementById('admin-date').min = today;
+    };
+
+    // Обновленная функция авторизации (с загрузкой базы)
+    async function login() {
+        userPhone = document.getElementById('user-phone').value;
+        if (userPhone.length < 5) return tg.showAlert("Введите корректный номер");
+        
+        document.getElementById('login-btn').classList.add('hidden');
+        document.getElementById('loader').classList.remove('hidden');
+
+        try {
+            // Скачиваем данные из Google Таблицы
+            let response = await fetch(SCRIPT_URL);
+            globalBookings = await response.json();
+        } catch (error) {
+            tg.showAlert("Слабое соединение с интернетом, расписание может быть неполным.");
+        }
+        
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('login-btn').classList.remove('hidden');
+
+        if (userPhone === "7777777777") document.getElementById('admin-btn').classList.remove('hidden');
+        showScreen('main-screen');
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
+        document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    // Логика связки тренеров и кортов
+    function getOccupyingBooking(bookings, date, time, target) {
+        const cleanTarget = target.split(' ')[0]; 
+        return bookings.find(b => {
+            if (b.date !== date || b.time !== time) return false;
+            if (b.target === cleanTarget) return true;
+            if (cleanTarget === 'Корт' && target === 'Корт 1' && b.target === 'Галина') return true;
+            if (cleanTarget === 'Галина' && b.target === 'Корт 1') return true;
+            if (cleanTarget === 'Корт' && target === 'Корт 2' && b.target === 'Наталья') return true;
+            if (cleanTarget === 'Наталья' && b.target === 'Корт 2') return true;
+            return false;
+        });
+    }
+
+    // Генерация слотов для клиентов
+    function generateSlots(type) {
+        const dateId = type === 'court' ? 'court-date' : 'coach-date';
+        const targetId = type === 'court' ? 'court-select' : 'coach-select';
+        const containerId = type === 'court' ? 'court-slots-container' : 'coach-slots-container';
+        const gridId = type === 'court' ? 'court-time-grid' : 'coach-time-grid';
+        
+        const date = document.getElementById(dateId).value;
+        const target = document.getElementById(targetId).value;
+        
+        if (!date) return document.getElementById(containerId).classList.add('hidden');
+        
+        document.getElementById(containerId).classList.remove('hidden');
+        const grid = document.getElementById(gridId);
+        grid.innerHTML = '';
+        selectedTime = "";
+
+        baseTimeSlots.forEach(time => {
+            const btn = document.createElement('div');
+            const slotData = getOccupyingBooking(globalBookings, date, time, target);
+
+            if (slotData) {
+                let reason = slotData.isUser ? 'Занято' : 'Не работает';
+                if (slotData.target !== target.split(' ')[0]) reason = `Занято (${slotData.target})`;
+                btn.className = 'time-slot ' + (slotData.isUser ? 'occupied' : 'admin-block');
+                btn.innerHTML = `${time} <span>${reason}</span>`;
+            } else {
+                btn.className = 'time-slot';
+                btn.innerHTML = `${time} <span>Выбрать</span>`;
+                btn.onclick = () => {
+                    document.querySelectorAll(`#${gridId} .time-slot`).forEach(el => el.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedTime = time;
+                };
+            }
+            grid.appendChild(btn);
+        });
+    }
+
+    // Генерация слотов для Админа
+    function generateAdminSlots() {
+        const date = document.getElementById('admin-date').value;
+        const target = document.getElementById('admin-target').value;
+        const grid = document.getElementById('admin-time-grid');
+        grid.innerHTML = '';
+        if (!date) return;
+
+        baseTimeSlots.forEach(time => {
+            const btn = document.createElement('div');
+            const cleanTarget = target.split(' ')[0];
+            const slotData = globalBookings.find(b => b.date === date && b.time === time && b.target === cleanTarget);
+
+            if (slotData) {
+                btn.className = 'time-slot ' + (slotData.isUser ? 'occupied' : 'admin-block');
+                btn.innerHTML = `${time} <span>Занято</span>`;
+                btn.onclick = () => tg.showAlert('Чтобы удалить бронь или снять блок, удалите соответствующую строку напрямую в Google Таблице.');
+            } else {
+                btn.className = 'time-slot';
+                btn.innerHTML = `${time} <span>Свободно (Закрыть)</span>`;
+                btn.onclick = () => {
+                    // Создаем объект блока
+                    let blockData = { date, time, target: cleanTarget, isUser: false, phone: "Админ" };
+                    
+                    // Обновляем визуально сразу же
+                    globalBookings.push(blockData);
+                    generateAdminSlots();
+
+                    // Отправляем в Google Таблицы в фоновом режиме
+                    fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(blockData) }).catch(e => console.log(e));
+                };
+            }
+            grid.appendChild(btn);
+        });
+    }
+
+    // Отправка данных клиентом
+    function submitData(type) {
+        const dateId = type === 'court' ? 'court-date' : 'coach-date';
+        const targetId = type === 'court' ? 'court-select' : 'coach-select';
+        
+        const date = document.getElementById(dateId).value;
+        const rawTarget = document.getElementById(targetId).value;
+        const target = rawTarget.split(' ')[0]; 
+
+        if (!date || !selectedTime) return tg.showAlert("Выберите дату и время!");
+
+        let bookingData = { 
+            date, 
+            time: selectedTime, 
+            target: rawTarget === 'Корт 1' || rawTarget === 'Корт 2' ? rawTarget : target, 
+            isUser: true, 
+            phone: userPhone 
+        };
+
+        // Записываем локально, чтобы сразу отобразить изменения
+        globalBookings.push(bookingData);
+        generateSlots(type);
+
+        // Отправляем в Google Таблицы
+        fetch(SCRIPT_URL, { method: 'POST', body: JSON.stringify(bookingData) });
+
+        tg.showAlert(`Успешно! ${rawTarget} забронирован(а) на ${date} в ${selectedTime}`);
+        
+        // Отправляем данные боту (опционально, если хотите получать уведомления в чат)
+        tg.sendData(JSON.stringify(bookingData));
+    }
+</script>
+</body>
+</html>
