@@ -2,572 +2,458 @@
 <html lang="ru">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Tennis Pro - Бронирование</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Теннисный Клуб</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        :root {
-            --bg-color: #12161a;
-            --card-bg: #1a2126;
-            --text-color: #ffffff;
-            --text-muted: #8a99a6;
-            --accent-color: #ccff00;
-            --accent-hover: #b5e600;
-            --danger-color: #ff4a4a;
-            --success-color: #00e676;
-            --border-radius: 12px;
-        }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 400px; }
+        h2 { text-align: center; margin-bottom: 10px;}
+        h3 { margin-bottom: 5px; }
+        p.subtitle { text-align: center; color: var(--tg-theme-hint-color); margin-bottom: 25px; font-size: 14px; }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-            -webkit-tap-highlight-color: transparent;
-        }
+        .btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #ffffff); border: none; border-radius: 10px; font-size: 16px; font-weight: 500; cursor: pointer; transition: opacity .15s; }
+        .btn:disabled { opacity: 0.5; cursor: default; }
+        .btn-outline { background-color: transparent; color: var(--tg-theme-button-color, #3390ec); border: 2px solid var(--tg-theme-button-color, #3390ec); }
+        .btn-back { background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000); margin-top: 20px; }
+        .btn-danger { background-color: transparent; color: #e64646; border: 2px solid #e64646; }
 
-        body {
-            background-color: var(--bg-color);
-            color: var(--text-color);
-            padding: 16px;
-            padding-bottom: 40px;
-            font-size: 15px;
-            line-height: 1.4;
-        }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; color: var(--tg-theme-hint-color); }
+        input, select { width: 100%; padding: 12px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 8px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); box-sizing: border-box; font-size: 15px; }
 
-        .screen {
-            display: none;
-        }
+        .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
+        .time-slot { padding: 10px; text-align: center; border: 1px solid var(--tg-theme-button-color, #3390ec); border-radius: 8px; color: var(--tg-theme-text-color, #000); cursor: pointer; font-size: 14px; }
+        .time-slot.selected { background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #ffffff); }
+        .time-slot.occupied { border-color: #e64646; color: #e64646; background-color: rgba(230, 70, 70, 0.05); cursor: not-allowed; }
+        .time-slot.admin-block { border-color: #ff9800; color: #ff9800; background-color: rgba(255, 152, 0, 0.1); }
+        .time-slot.past { border-color: var(--tg-theme-hint-color, #ccc); color: var(--tg-theme-hint-color, #999); background-color: transparent; cursor: not-allowed; opacity: 0.6; }
+        .time-slot span { display: block; font-size: 11px; opacity: 0.8; }
 
-        .screen.active {
-            display: block;
-        }
+        .hidden { display: none !important; }
+        .admin-badge { background: #ff9800; color: #fff; padding: 5px 10px; border-radius: 5px; font-size: 12px; display: inline-block; margin-bottom: 15px;}
+        .user-chip { text-align: center; font-size: 13px; color: var(--tg-theme-hint-color); margin-bottom: 18px; }
 
-        h1, h2, h3 {
-            font-weight: 700;
-            margin-bottom: 12px;
-        }
+        #loader { text-align: center; color: var(--tg-theme-hint-color); font-weight: bold; margin-top: 20px; }
 
-        h1 { font-size: 24px; color: var(--text-color); text-align: center; margin-bottom: 20px; }
-        h2 { font-size: 18px; margin-top: 20px; color: var(--accent-color); border-left: 3px solid var(--accent-color); padding-left: 8px; }
+        /* Экран успеха */
+        #result-screen { text-align: center; }
+        .result-icon { font-size: 56px; margin: 20px 0 10px; }
+        .result-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 16px; margin: 16px 0; text-align: left; font-size: 15px; line-height: 1.6; }
+        .result-card b { color: var(--tg-theme-text-color, #000); }
 
-        .btn {
-            background-color: var(--accent-color);
-            color: #000000;
-            border: none;
-            padding: 14px 20px;
-            border-radius: var(--border-radius);
-            font-size: 16px;
-            font-weight: 600;
-            width: 100%;
-            cursor: pointer;
-            transition: background 0.2s, transform 0.1s;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            gap: 8px;
-            margin-top: 16px;
-        }
-
-        .btn:active {
-            transform: scale(0.98);
-            background-color: var(--accent-hover);
-        }
-
-        .btn-secondary {
-            background-color: transparent;
-            color: var(--text-color);
-            border: 1px solid var(--text-muted);
-        }
-
-        .btn-secondary:active {
-            background-color: rgba(255, 255, 255, 0.05);
-        }
-
-        /* Карточки тренеров и цен */
-        .card {
-            background-color: var(--card-bg);
-            border-radius: var(--border-radius);
-            padding: 16px;
-            margin-bottom: 14px;
-            border: 1px solid rgba(255, 255, 255, 0.05);
-        }
-
-        .price-item {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            padding: 8px 0;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
-        }
-        .price-item:last-child { border-bottom: none; }
-        .price-val { font-weight: bold; color: var(--accent-color); }
-
-        .coach-header {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            margin-bottom: 10px;
-        }
-        .coach-icon {
-            font-size: 24px;
-            background: rgba(204, 255, 0, 0.1);
-            padding: 8px;
-            border-radius: 50%;
-            color: var(--accent-color);
-        }
-        .coach-name { font-size: 17px; font-weight: bold; }
-        .coach-meta { font-size: 13px; color: var(--text-muted); margin-bottom: 8px; }
-        .coach-desc { font-size: 14px; color: rgba(255, 255, 255, 0.9); }
-
-        /* Авторизация / Контакт */
-        .input-group {
-            margin-bottom: 16px;
-        }
-        label {
-            display: block;
-            margin-bottom: 6px;
-            font-size: 13px;
-            color: var(--text-muted);
-        }
-        input, select {
-            width: 100%;
-            background-color: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 12px;
-            border-radius: var(--border-radius);
-            color: white;
-            font-size: 16px;
-            outline: none;
-        }
-        input:focus {
-            border-color: var(--accent-color);
-        }
-
-        /* Календарь */
-        .calendar-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 12px;
-            font-weight: bold;
-            font-size: 16px;
-        }
-        .calendar-grid {
-            display: grid;
-            grid-template-columns: repeat(7, 1fr);
-            gap: 6px;
-            text-align: center;
-        }
-        .weekday {
-            font-size: 12px;
-            color: var(--text-muted);
-            font-weight: bold;
-            padding-bottom: 6px;
-        }
-        .day {
-            background-color: var(--card-bg);
-            padding: 10px 0;
-            border-radius: 8px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-            border: 1px solid transparent;
-        }
-        .day.disabled {
-            opacity: 0.2;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-        .day.selected {
-            background-color: var(--accent-color);
-            color: #000;
-            font-weight: bold;
-        }
-        .day.today {
-            border-color: rgba(204, 255, 0, 0.4);
-        }
-
-        /* Сетка слотов времени */
-        .slots-container {
-            margin-top: 20px;
-            animation: fadeIn 0.3s ease;
-        }
-        @keyframes fadeIn {
-            from { opacity: 0; transform: translateY(10px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        .slot-section-title {
-            font-size: 14px;
-            color: var(--text-muted);
-            margin: 12px 0 6px 0;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-        }
-        .slots-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 8px;
-            margin-bottom: 14px;
-        }
-        .slot {
-            background-color: var(--card-bg);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            padding: 10px;
-            text-align: center;
-            border-radius: 8px;
-            font-size: 14px;
-            cursor: pointer;
-            font-weight: 500;
-        }
-        .slot.available {
-            border-color: rgba(204, 255, 0, 0.3);
-            color: var(--text-color);
-        }
-        .slot.selected {
-            background-color: var(--accent-color);
-            color: #000;
-            font-weight: bold;
-            border-color: var(--accent-color);
-        }
-        .slot.taken {
-            opacity: 0.2;
-            background-color: rgba(0,0,0,0.2);
-            text-decoration: line-through;
-            pointer-events: none;
-        }
-
-        .summary-box {
-            background: rgba(204, 255, 0, 0.05);
-            border: 1px dashed var(--accent-color);
-            border-radius: var(--border-radius);
-            padding: 14px;
-            margin-top: 16px;
-        }
+        /* Мои записи */
+        .booking-item { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
+        .booking-item .info { font-size: 14px; line-height: 1.4; }
+        .booking-item .info small { color: var(--tg-theme-hint-color); }
+        .empty-note { text-align: center; color: var(--tg-theme-hint-color); margin: 30px 0; }
     </style>
 </head>
 <body>
 
-    <div id="screen-welcome" class="screen active">
-        <h1>Tennis Pro Novi Sad</h1>
-        
-        <div class="card">
-            <p style="text-align: center; margin-bottom: 10px; font-weight: 500;">🎾 Теннис — игра для удовольствия и развития в любом возрасте!</p>
+<div class="container">
+
+    <!-- АВТОРИЗАЦИЯ -->
+    <div id="auth-screen">
+        <h2>Теннисный клуб 🎾</h2>
+        <p class="subtitle" id="auth-subtitle">Загружаем профиль…</p>
+
+        <!-- Поле телефона нужно только в браузере (для теста) или если хотим собрать номер -->
+        <div class="form-group hidden" id="phone-group">
+            <label>Телефон для связи</label>
+            <input type="tel" id="user-phone" placeholder="+7 ...">
         </div>
 
-        <h2>Прайс-лист</h2>
-        <div class="card">
-            <div class="price-item">
-                <span>Аренда корта (1 / 1.5 / 2 часа)</span>
-                <span class="price-val">1000 RSD / ч</span>
-            </div>
-            <div class="price-item">
-                <span>Индивидуальное занятие с тренером</span>
-                <span class="price-val">4000 RSD / ч</span>
-            </div>
-        </div>
-
-        <h2>Наши тренеры</h2>
-        
-        <div class="card">
-            <div class="coach-header">
-                <span class="coach-icon">🎾</span>
-                <div>
-                    <div class="coach-name">Галина</div>
-                    <div class="coach-meta">Стаж > 30 лет • Сертификация US PTR Professional • КМС</div>
-                </div>
-            </div>
-            <div class="coach-desc">
-                Действующий игрок ITF. Начальное обучение и турнирная подготовка (индивидуально, сплит, группы). Локации: Саймиште (летние) и Сайм (зимние). Приглашаю совершенствовать мастерство вместе!
-            </div>
-        </div>
-
-        <div class="card">
-            <div class="coach-header">
-                <span class="coach-icon">🎾</span>
-                <div>
-                    <div class="coach-name">Наталия Прохорская</div>
-                    <div class="coach-meta">Стаж 27 лет • Мастер Спорта • Опыт в Европе • Сертификат US PTR</div>
-                </div>
-            </div>
-            <div class="coach-desc">
-                Опыт работы в школе олимпийского резерва. Тренирует как любителей, так и профессионалов. Подготовила множество кандидатов в мастера спорта и перворазрядников.
-            </div>
-        </div>
-
-        <button class="btn" onclick="goToScreen('screen-auth')">Перейти к бронированию ➜</button>
+        <button class="btn" id="login-btn" onclick="login()">Войти</button>
+        <div id="loader" class="hidden">🔄 Загрузка расписания...</div>
     </div>
 
-
-    <div id="screen-auth" class="screen">
-        <h1>Ваши данные</h1>
-        <div class="card">
-            <p style="margin-bottom: 14px; color: var(--text-muted); text-align: center;">Для управления бронированием подтвердите номер телефона:</p>
-            
-            <button class="btn" id="btn-tg-contact" onclick="requestTelegramContact()">
-                📱 Поделиться номером из Telegram
-            </button>
-
-            <div style="text-align: center; margin: 14px 0; color: var(--text-muted); font-size: 13px;">или введите вручную</div>
-
-            <div class="input-group">
-                <label>Имя</label>
-                <input type="text" id="user-name" placeholder="Введите ваше имя">
-            </div>
-            <div class="input-group">
-                <label>Номер телефона</label>
-                <input type="tel" id="user-phone" placeholder="+381...">
-            </div>
-
-            <button class="btn btn-secondary" onclick="loginManual()">Войти по номеру</button>
-        </div>
-        <button class="btn btn-secondary" onclick="goToScreen('screen-welcome')">⬅ Назад</button>
+    <!-- МЕНЮ -->
+    <div id="main-screen" class="hidden">
+        <h2>Главное меню</h2>
+        <div class="user-chip" id="user-chip"></div>
+        <button class="btn" onclick="showScreen('court-booking-screen')">📅 Аренда корта</button>
+        <button class="btn" onclick="showScreen('coach-screen')">💪 С тренером</button>
+        <button class="btn btn-outline" onclick="openMyBookings()">📋 Мои записи</button>
+        <button class="btn btn-outline hidden" id="admin-btn" onclick="showScreen('admin-screen')">⚙️ Панель Администратора</button>
     </div>
 
-
-    <div id="screen-booking" class="screen">
-        <h1 id="booking-title">Выбор времени</h1>
-        
-        <div class="card">
-            <div class="input-group">
-                <label>Выберите услугу</label>
-                <select id="select-service" onchange="resetSelection()">
-                    <option value="court">Только аренда корта (1000 RSD/ч)</option>
-                    <option value="coach_g">Занятие с тренером Галиной (4000 RSD/ч)</option>
-                    <option value="coach_n">Занятие с тренером Наталией (4000 RSD/ч)</option>
-                </select>
-            </div>
+    <!-- АРЕНДА КОРТА -->
+    <div id="court-booking-screen" class="hidden">
+        <h2>Аренда корта</h2>
+        <div class="form-group">
+            <label>Выберите корт:</label>
+            <select id="court-select" onchange="generateSlots('court')">
+                <option value="Корт 1">Корт 1 (Грунт)</option>
+                <option value="Корт 2">Корт 2 (Хард)</option>
+            </select>
         </div>
-
-        <h2>Календарь</h2>
-        <div class="card">
-            <div class="calendar-header">
-                <span id="calendar-month-year">Май 2026</span>
-            </div>
-            <div class="calendar-grid" id="calendar-grid">
-                </div>
+        <div class="form-group">
+            <label>Выберите дату:</label>
+            <input type="date" id="court-date" onchange="generateSlots('court')">
         </div>
-
-        <div class="slots-container" id="slots-container" style="display: none;">
-            <h2>Доступные слоты на <span id="selected-date-str"></span></h2>
-            
-            <div class="slot-section-title">Сессия 1 час</div>
-            <div class="slots-grid" id="slots-1h"></div>
-
-            <div class="slot-section-title">Сессия 1.5 часа</div>
-            <div class="slots-grid" id="slots-15h"></div>
-
-            <div class="slot-section-title">Сессия 2 часа</div>
-            <div class="slots-grid" id="slots-2h"></div>
-            
-            <div class="summary-box" id="summary-box" style="display: none;">
-                <div style="font-weight: bold; margin-bottom: 4px;">Итоговая бронь:</div>
-                <div id="summary-text" style="font-size: 14px; color: var(--accent-color);"></div>
-            </div>
-
-            <button class="btn" id="btn-confirm-booking" style="display: none;" onclick="confirmBooking()">Забронировать слот</button>
+        <div class="form-group hidden" id="court-slots-container">
+            <label>Доступное время:</label>
+            <div class="time-grid" id="court-time-grid"></div>
         </div>
-
-        <button class="btn btn-secondary" style="margin-top: 20px;" onclick="goToScreen('screen-auth')">⬅ Выйти из аккаунта</button>
+        <button class="btn" id="court-submit" onclick="submitData('court')">Забронировать</button>
+        <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
     </div>
 
-    <script>
-        // Инициализация Telegram WebApp
-        const tg = window.Telegram?.WebApp;
-        if (tg) {
-            tg.expand();
-            tg.ready();
+    <!-- ЗАПИСЬ К ТРЕНЕРУ -->
+    <div id="coach-screen" class="hidden">
+        <h2>Запись к тренеру</h2>
+        <div class="form-group">
+            <label>Выберите тренера:</label>
+            <select id="coach-select" onchange="generateSlots('coach')">
+                <option value="Галина">Галина (на Корте 1)</option>
+                <option value="Наталья">Наталья (на Корте 2)</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Выберите дату:</label>
+            <input type="date" id="coach-date" onchange="generateSlots('coach')">
+        </div>
+        <div class="form-group hidden" id="coach-slots-container">
+            <label>Доступное время:</label>
+            <div class="time-grid" id="coach-time-grid"></div>
+        </div>
+        <button class="btn" id="coach-submit" onclick="submitData('coach')">Записаться</button>
+        <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
+    </div>
+
+    <!-- МОИ ЗАПИСИ -->
+    <div id="my-screen" class="hidden">
+        <h2>Мои записи</h2>
+        <p class="subtitle">Здесь видны все ваши предстоящие брони.</p>
+        <div id="my-list"></div>
+        <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
+    </div>
+
+    <!-- ЭКРАН УСПЕХА -->
+    <div id="result-screen" class="hidden">
+        <div class="result-icon">✅</div>
+        <h2>Готово!</h2>
+        <div class="result-card" id="result-text"></div>
+        <button class="btn" onclick="showScreen('main-screen')">В главное меню</button>
+    </div>
+
+    <!-- ПАНЕЛЬ АДМИНА -->
+    <div id="admin-screen" class="hidden">
+        <div class="admin-badge">Режим управления расписанием</div>
+        <h2>Блокировка слотов</h2>
+        <p class="subtitle">Нажмите на свободный слот, чтобы закрыть его.</p>
+
+        <div class="form-group">
+            <label>Кого/Что редактируем?</label>
+            <select id="admin-target" onchange="generateAdminSlots()">
+                <option value="Корт 1">Корт 1</option>
+                <option value="Корт 2">Корт 2</option>
+                <option value="Галина">Тренер: Галина</option>
+                <option value="Наталья">Тренер: Наталья</option>
+            </select>
+        </div>
+        <div class="form-group">
+            <label>Дата:</label>
+            <input type="date" id="admin-date" onchange="generateAdminSlots()">
+        </div>
+        <div class="time-grid" id="admin-time-grid"></div>
+        <button class="btn btn-back" onclick="showScreen('main-screen')">В главное меню</button>
+    </div>
+</div>
+
+<script>
+    const tg = window.Telegram.WebApp;
+    tg.ready();
+    tg.expand();
+
+    // === НАСТРОЙКИ ===
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbznuVxui07UaJuTPuXhW-RQOADR7xHqTB7Lg3OkdsADcRHlxEAB0S1MVA3ZHOxTJ7o8/exec';
+
+    // Telegram ID администраторов. Узнать свой ID можно у бота @userinfobot
+    const ADMIN_IDS = [132787250]; // сюда добавляй ID остальных админов через запятую
+
+    // Нужно ли просить телефон. Если хватает имени из Telegram — поставь false.
+    const COLLECT_PHONE = true;
+
+    const baseTimeSlots = ["09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:00", "19:30"];
+
+    // === СОСТОЯНИЕ ===
+    const tgUser = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : null;
+    let userId = tgUser ? String(tgUser.id) : "";
+    let userName = tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : "";
+    let userPhone = "";
+    let isAdmin = false;
+    let selectedTime = "";
+    let globalBookings = [];
+
+    window.onload = function() {
+        const today = new Date().toISOString().split('T')[0];
+        ['court-date', 'coach-date', 'admin-date'].forEach(id => {
+            document.getElementById(id).min = today;
+        });
+
+        const sub = document.getElementById('auth-subtitle');
+        if (tgUser) {
+            // Мы внутри Telegram — личность уже известна, телефон необязателен
+            sub.innerText = `Здравствуйте, ${userName || 'игрок'}! Нажмите «Войти», чтобы продолжить.`;
+            if (COLLECT_PHONE) {
+                document.getElementById('phone-group').classList.remove('hidden');
+                document.querySelector('#phone-group label').innerText = 'Телефон для связи (необязательно)';
+            }
+        } else {
+            // Открыто в браузере для теста — Telegram-личности нет
+            sub.innerHTML = 'Открыто вне Telegram (режим теста).<br>Введите телефон, чтобы продолжить. <small>(7777777777 — вход в админку)</small>';
+            document.getElementById('phone-group').classList.remove('hidden');
+        }
+    };
+
+    async function login() {
+        userPhone = (document.getElementById('user-phone').value || "").trim();
+
+        if (!tgUser) {
+            // Браузерный режим: телефон обязателен и служит идентификатором
+            if (userPhone.length < 5) return tg.showAlert("Введите корректный номер");
+            userId = "guest_" + userPhone;
+            userName = userName || ("Гость " + userPhone);
         }
 
-        let currentUser = null;
-        let selectedDate = null;
-        let selectedDuration = null;
-        let selectedTime = null;
+        isAdmin = ADMIN_IDS.includes(Number(userId)) || userPhone === "7777777777";
 
-        // Тестовая база занятых слотов (для демонстрации)
-        const mockTakenSlots = {
-            "2026-05-30": ["10:00 (1ч)", "14:00 (1.5ч)"],
-            "2026-05-31": ["12:00 (2ч)"]
+        document.getElementById('login-btn').classList.add('hidden');
+        document.getElementById('loader').classList.remove('hidden');
+
+        try {
+            const response = await fetch(SCRIPT_URL);
+            globalBookings = await response.json();
+            if (!Array.isArray(globalBookings)) globalBookings = [];
+        } catch (error) {
+            globalBookings = [];
+            tg.showAlert("Не удалось загрузить расписание. Проверьте соединение и попробуйте ещё раз.");
+        }
+
+        document.getElementById('loader').classList.add('hidden');
+        document.getElementById('login-btn').classList.remove('hidden');
+
+        document.getElementById('user-chip').innerText =
+            (userName ? userName : "Гость") + (userPhone ? " · " + userPhone : "");
+        if (isAdmin) document.getElementById('admin-btn').classList.remove('hidden');
+
+        showScreen('main-screen');
+    }
+
+    function showScreen(screenId) {
+        document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
+        document.getElementById(screenId).classList.remove('hidden');
+    }
+
+    // Связка тренеров и кортов: тренер занимает свой корт, и наоборот
+    function linkedTargets(target) {
+        const map = {
+            'Корт 1': ['Корт 1', 'Галина'],
+            'Галина': ['Галина', 'Корт 1'],
+            'Корт 2': ['Корт 2', 'Наталья'],
+            'Наталья': ['Наталья', 'Корт 2']
+        };
+        return map[target] || [target];
+    }
+
+    function getOccupyingBooking(bookings, date, time, target) {
+        const conflicts = linkedTargets(target);
+        return bookings.find(b =>
+            b.date === date && b.time === time && conflicts.indexOf(b.target) !== -1
+        );
+    }
+
+    // Проверка, что слот уже в прошлом (для сегодняшней даты)
+    function isPastSlot(date, time) {
+        const today = new Date().toISOString().split('T')[0];
+        if (date !== today) return false;
+        const now = new Date();
+        const [h, m] = time.split(':').map(Number);
+        const slotDate = new Date();
+        slotDate.setHours(h, m, 0, 0);
+        return slotDate <= now;
+    }
+
+    function generateSlots(type) {
+        const dateId = type === 'court' ? 'court-date' : 'coach-date';
+        const targetId = type === 'court' ? 'court-select' : 'coach-select';
+        const containerId = type === 'court' ? 'court-slots-container' : 'coach-slots-container';
+        const gridId = type === 'court' ? 'court-time-grid' : 'coach-time-grid';
+
+        const date = document.getElementById(dateId).value;
+        const target = document.getElementById(targetId).value;
+
+        if (!date) return document.getElementById(containerId).classList.add('hidden');
+
+        document.getElementById(containerId).classList.remove('hidden');
+        const grid = document.getElementById(gridId);
+        grid.innerHTML = '';
+        selectedTime = "";
+
+        baseTimeSlots.forEach(time => {
+            const btn = document.createElement('div');
+            const slotData = getOccupyingBooking(globalBookings, date, time, target);
+
+            if (isPastSlot(date, time)) {
+                btn.className = 'time-slot past';
+                btn.innerHTML = `${time} <span>Прошло</span>`;
+            } else if (slotData) {
+                let reason = slotData.isUser ? 'Занято' : 'Не работает';
+                if (slotData.target !== target) reason = `Занято (${slotData.target})`;
+                btn.className = 'time-slot ' + (slotData.isUser ? 'occupied' : 'admin-block');
+                btn.innerHTML = `${time} <span>${reason}</span>`;
+            } else {
+                btn.className = 'time-slot';
+                btn.innerHTML = `${time} <span>Выбрать</span>`;
+                btn.onclick = () => {
+                    document.querySelectorAll(`#${gridId} .time-slot`).forEach(el => el.classList.remove('selected'));
+                    btn.classList.add('selected');
+                    selectedTime = time;
+                };
+            }
+            grid.appendChild(btn);
+        });
+    }
+
+    function generateAdminSlots() {
+        const date = document.getElementById('admin-date').value;
+        const target = document.getElementById('admin-target').value;
+        const grid = document.getElementById('admin-time-grid');
+        grid.innerHTML = '';
+        if (!date) return;
+
+        baseTimeSlots.forEach(time => {
+            const btn = document.createElement('div');
+            const slotData = getOccupyingBooking(globalBookings, date, time, target);
+
+            if (slotData) {
+                btn.className = 'time-slot ' + (slotData.isUser ? 'occupied' : 'admin-block');
+                const label = slotData.target !== target ? `Занято (${slotData.target})` : 'Занято';
+                btn.innerHTML = `${time} <span>${label}</span>`;
+                btn.onclick = () => tg.showAlert('Чтобы снять бронь или блокировку, удалите соответствующую строку в Google Таблице.');
+            } else {
+                btn.className = 'time-slot';
+                btn.innerHTML = `${time} <span>Свободно (Закрыть)</span>`;
+                btn.onclick = () => {
+                    let blockData = { date, time, target: target, isUser: false, phone: "Админ", tgId: userId, name: userName };
+                    globalBookings.push(blockData);
+                    generateAdminSlots();
+                    sendBooking(blockData).catch(e => console.log(e));
+                };
+            }
+            grid.appendChild(btn);
+        });
+    }
+
+    // Единая отправка данных в таблицу
+    function sendBooking(data) {
+        // text/plain — чтобы не было CORS-preflight, который Apps Script не обрабатывает
+        return fetch(SCRIPT_URL, {
+            method: 'POST',
+            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+            body: JSON.stringify(data)
+        });
+    }
+
+    async function submitData(type) {
+        const dateId = type === 'court' ? 'court-date' : 'coach-date';
+        const targetId = type === 'court' ? 'court-select' : 'coach-select';
+        const btnId = type === 'court' ? 'court-submit' : 'coach-submit';
+
+        const date = document.getElementById(dateId).value;
+        const target = document.getElementById(targetId).value; // полное имя: "Корт 1" / "Галина" и т.д.
+
+        if (!date || !selectedTime) return tg.showAlert("Выберите дату и время!");
+        if (isPastSlot(date, selectedTime)) return tg.showAlert("Это время уже прошло, выберите другое.");
+
+        const btn = document.getElementById(btnId);
+        const originalText = btn.innerText;
+        btn.disabled = true;
+        btn.innerText = "Проверяем…";
+
+        const bookingData = {
+            date,
+            time: selectedTime,
+            target,
+            isUser: true,
+            phone: userPhone,
+            tgId: userId,
+            name: userName
         };
 
-        function goToScreen(screenId) {
-            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
-            document.getElementById(screenId).classList.add('active');
-            if(screenId === 'screen-booking') {
-                renderCalendar();
-            }
-        }
+        try {
+            // Обновляем расписание, чтобы поймать брони, сделанные другими прямо сейчас
+            try {
+                const fresh = await (await fetch(SCRIPT_URL)).json();
+                if (Array.isArray(fresh)) globalBookings = fresh;
+            } catch (_) {}
 
-        // Запрос контакта через Телеграм
-        function requestTelegramContact() {
-            if (tg && tg.requestContact) {
-                tg.requestContact(function(res) {
-                    if (res.status === 'sent' && res.response && res.response.contact) {
-                        const contact = res.response.contact;
-                        currentUser = {
-                            name: (contact.first_name || '') + ' ' + (contact.last_name || ''),
-                            phone: contact.phone_number
-                        };
-                        checkAdminAndProceed();
-                    } else {
-                        alert("Не удалось получить контакт автоматически. Введите данные вручную.");
-                    }
-                });
-            } else {
-                alert("Функция доступна внутри Telegram. Пожалуйста, используйте ручной ввод.");
-            }
-        }
-
-        function loginManual() {
-            const name = document.getElementById('user-name').value.trim();
-            const phone = document.getElementById('user-phone').value.trim();
-            
-            if(!name || !phone) {
-                alert("Пожалуйста, заполните имя и телефон.");
+            if (getOccupyingBooking(globalBookings, date, selectedTime, target)) {
+                tg.showAlert("Увы, это время только что заняли. Выберите другое.");
+                generateSlots(type);
                 return;
             }
-            
-            currentUser = { name: name, phone: phone };
-            checkAdminAndProceed();
-        }
 
-        function checkAdminAndProceed() {
-            if(currentUser.phone.includes("7777777777")) {
-                alert("Вход в панель Администратора выполнен успешно!");
-            }
-            goToScreen('screen-booking');
-        }
+            btn.innerText = "Отправляем…";
+            const res = await sendBooking(bookingData);
 
-        // Генерация календаря на текущий месяц (май 2026 года)
-        function renderCalendar() {
-            const grid = document.getElementById('calendar-grid');
-            grid.innerHTML = '';
+            // Сервер может вернуть {ok:false} если слот заняли в последний момент
+            let ok = true;
+            try {
+                const json = await res.json();
+                if (json && json.ok === false) ok = false;
+            } catch (_) { /* ответ нечитаем из-за CORS — считаем успехом */ }
 
-            const weekdays = ['Пн', 'Вт', 'Ср', 'Чт', 'Пт', 'Сб', 'Вс'];
-            weekdays.forEach(w => {
-                const div = document.createElement('div');
-                div.className = 'weekday';
-                div.innerText = w;
-                grid.appendChild(div);
-            });
-
-            const year = 2026;
-            const month = 4; // Май (0-индексируемый)
-            const daysInMonth = 31;
-            const firstDayIndex = 4; // 1 мая 2026 — пятница
-
-            for (let i = 0; i < firstDayIndex; i++) {
-                const empty = document.createElement('div');
-                grid.appendChild(empty);
+            if (!ok) {
+                tg.showAlert("Это время только что заняли. Выберите другое.");
+                try { globalBookings = await (await fetch(SCRIPT_URL)).json(); } catch (_) {}
+                generateSlots(type);
+                return;
             }
 
-            const today = 29; // Предположим сегодня 29 мая
-
-            for (let d = 1; d <= daysInMonth; d++) {
-                const dayDiv = document.createElement('div');
-                dayDiv.className = 'day';
-                dayDiv.innerText = d;
-                
-                if (d === today) dayDiv.classList.add('today');
-                if (d < today) {
-                    dayDiv.classList.add('disabled');
-                } else {
-                    dayDiv.onclick = () => selectDay(dayDiv, year, month, d);
-                }
-                grid.appendChild(dayDiv);
-            }
-            
-            document.getElementById('calendar-month-year').innerText = "Май 2026";
+            globalBookings.push(bookingData);
+            document.getElementById('result-text').innerHTML =
+                `<b>${target}</b><br>📅 ${formatDate(date)}<br>🕐 ${selectedTime}` +
+                (userName ? `<br>👤 ${userName}` : '');
+            showScreen('result-screen');
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+            selectedTime = "";
+        } catch (e) {
+            tg.showAlert("Не удалось сохранить запись. Проверьте интернет и попробуйте снова.");
+        } finally {
+            btn.disabled = false;
+            btn.innerText = originalText;
         }
+    }
 
-        function selectDay(element, year, month, day) {
-            document.querySelectorAll('.day').forEach(d => d.classList.remove('selected'));
-            element.classList.add('selected');
+    function formatDate(d) {
+        const [y, m, day] = d.split('-');
+        return `${day}.${m}.${y}`;
+    }
 
-            const monthStr = (month + 1).toString().padStart(2, '0');
-            const dayStr = day.toString().padStart(2, '0');
-            selectedDate = `${year}-${monthStr}-${dayStr}`;
-            
-            document.getElementById('selected-date-str').innerText = `${dayStr}.${monthStr}.${year}`;
-            document.getElementById('slots-container').style.display = 'block';
-            
-            resetSelection(false);
-            renderSlots();
+    // === МОИ ЗАПИСИ ===
+    function openMyBookings() {
+        const list = document.getElementById('my-list');
+        const today = new Date().toISOString().split('T')[0];
+
+        const mine = globalBookings.filter(b =>
+            b.isUser &&
+            ((b.tgId && String(b.tgId) === userId) || (userPhone && b.phone === userPhone)) &&
+            b.date >= today
+        ).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+
+        if (mine.length === 0) {
+            list.innerHTML = '<div class="empty-note">Пока нет предстоящих записей.</div>';
+        } else {
+            list.innerHTML = mine.map(b => `
+                <div class="booking-item">
+                    <div class="info"><b>${b.target}</b><br><small>${formatDate(b.date)} · ${b.time}</small></div>
+                </div>`).join('');
         }
-
-        function resetSelection(hideSlots = true) {
-            selectedTime = null;
-            selectedDuration = null;
-            if(hideSlots) {
-                document.getElementById('slots-container').style.display = 'none';
-            }
-            document.getElementById('summary-box').style.display = 'none';
-            document.getElementById('btn-confirm-booking').style.display = 'none';
-        }
-
-        function renderSlots() {
-            const times1h = ["08:00", "09:00", "10:00", "11:00", "12:00", "13:00", "15:00", "16:00", "17:00", "18:00"];
-            const times15h = ["08:00", "09:30", "11:00", "12:30", "14:00", "15:30", "17:00", "18:30"];
-            const times2h = ["08:00", "10:00", "12:00", "14:00", "16:00", "18:00"];
-
-            buildSlotGrid('slots-1h', times1h, '1ч');
-            buildSlotGrid('slots-15h', times15h, '1.5ч');
-            buildSlotGrid('slots-2h', times2h, '2ч');
-        }
-
-        function buildSlotGrid(containerId, timeArray, durationLabel) {
-            const container = document.getElementById(containerId);
-            container.innerHTML = '';
-            
-            const taken = mockTakenSlots[selectedDate] || [];
-
-            timeArray.forEach(time => {
-                const div = document.createElement('div');
-                div.className = 'slot available';
-                div.innerText = time;
-                
-                const slotKey = `${time} (${durationLabel})`;
-                if(taken.includes(slotKey)) {
-                    div.className = 'slot taken';
-                } else {
-                    div.onclick = () => selectSlot(div, time, durationLabel);
-                }
-                container.appendChild(div);
-            });
-        }
-
-        function selectSlot(element, time, duration) {
-            document.querySelectorAll('.slot').forEach(s => s.classList.remove('selected'));
-            element.classList.add('selected');
-            
-            selectedTime = time;
-            selectedDuration = duration;
-            
-            const serviceSelect = document.getElementById('select-service');
-            const serviceText = serviceSelect.options[serviceSelect.selectedIndex].text;
-
-            document.getElementById('summary-box').style.display = 'block';
-            document.getElementById('summary-text').innerText = `${serviceText}\nДата: ${selectedDate}\nВремя: ${selectedTime} (Длительность: ${selectedDuration})`;
-            document.getElementById('btn-confirm-booking').style.display = 'block';
-        }
-
-        function confirmBooking() {
-            const service = document.getElementById('select-service').value;
-            const bookingData = {
-                user: currentUser,
-                date: selectedDate,
-                time: selectedTime,
-                duration: selectedDuration,
-                service: service
-            };
-
-            if (tg) {
-                tg.sendData(JSON.stringify(bookingData));
-            } else {
-                alert("Успешно забронировано!");
-                console.log(bookingData);
-            }
-        }
-    </script>
+        showScreen('my-screen');
+    }
+</script>
 </body>
 </html>
