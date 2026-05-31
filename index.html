@@ -3,67 +3,133 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Теннисный Клуб</title>
+    <title>Tennis Pro Novi Sad</title>
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); margin: 0; padding: 20px; display: flex; flex-direction: column; align-items: center; }
-        .container { width: 100%; max-width: 400px; }
-        h2 { text-align: center; margin-bottom: 10px;}
-        h3 { margin-bottom: 5px; }
-        p.subtitle { text-align: center; color: var(--tg-theme-hint-color); margin-bottom: 25px; font-size: 14px; }
-
-        .btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #ffffff); border: none; border-radius: 10px; font-size: 16px; font-weight: 500; cursor: pointer; transition: opacity .15s; }
+        * { box-sizing: border-box; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); margin: 0; padding: 0 16px 24px; display: flex; flex-direction: column; align-items: center; }
+        .container { width: 100%; max-width: 420px; }
+        h2 { text-align: center; margin: 16px 0 8px; }
+        p.subtitle { text-align: center; color: var(--tg-theme-hint-color); margin: 0 0 20px; font-size: 14px; }
+        .btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #ffffff); border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+        .btn:active { opacity: 0.8; }
         .btn:disabled { opacity: 0.5; cursor: default; }
         .btn-outline { background-color: transparent; color: var(--tg-theme-button-color, #3390ec); border: 2px solid var(--tg-theme-button-color, #3390ec); }
-        .btn-back { background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000); margin-top: 20px; }
-        .btn-danger { background-color: transparent; color: #e64646; border: 2px solid #e64646; }
+        .btn-back { background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000); margin-top: 8px; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px; color: var(--tg-theme-hint-color); }
+        select, input[type=tel] { width: 100%; padding: 12px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 10px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); font-size: 15px; }
 
-        .form-group { margin-bottom: 15px; }
-        label { display: block; margin-bottom: 5px; font-weight: 500; font-size: 14px; color: var(--tg-theme-hint-color); }
-        input, select { width: 100%; padding: 12px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 8px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); box-sizing: border-box; font-size: 15px; }
+        /* Барабан */
+        .drum-date { display: flex; gap: 8px; }
+        .drum-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
+        .drum-col label { font-size: 11px; color: var(--tg-theme-hint-color); margin: 0; }
+        .drum-select { width: 100%; padding: 10px 4px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 10px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); font-size: 15px; text-align: center; }
 
-        .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-        .time-slot { padding: 10px; text-align: center; border: 1px solid var(--tg-theme-button-color, #3390ec); border-radius: 8px; color: var(--tg-theme-text-color, #000); cursor: pointer; font-size: 14px; }
-        .time-slot.selected { background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #ffffff); }
-        .time-slot.occupied { border-color: #e64646; color: #e64646; background-color: rgba(230, 70, 70, 0.05); cursor: not-allowed; }
-        .time-slot.admin-block { border-color: #ff9800; color: #ff9800; background-color: rgba(255, 152, 0, 0.1); }
-        .time-slot.past { border-color: var(--tg-theme-hint-color, #ccc); color: var(--tg-theme-hint-color, #999); background-color: transparent; cursor: not-allowed; opacity: 0.6; }
-        .time-slot span { display: block; font-size: 11px; opacity: 0.8; }
+        /* Слоты */
+        .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+        .time-slot { padding: 10px 6px; text-align: center; border: 1.5px solid var(--tg-theme-button-color, #3390ec); border-radius: 10px; color: var(--tg-theme-text-color, #000); cursor: pointer; font-size: 15px; font-weight: 500; }
+        .time-slot.selected { background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #fff); }
+        .time-slot.occupied { border-color: #e64646; color: #e64646; background-color: rgba(230,70,70,0.05); cursor: not-allowed; }
+        .time-slot.admin-block { border-color: #ff9800; color: #ff9800; background-color: rgba(255,152,0,0.08); cursor: not-allowed; }
+        .time-slot.past { border-color: var(--tg-theme-hint-color,#ccc); color: var(--tg-theme-hint-color,#999); opacity: 0.5; cursor: not-allowed; }
+        .time-slot span { display: block; font-size: 10px; opacity: 0.75; font-weight: 400; margin-top: 2px; }
 
         .hidden { display: none !important; }
-        .admin-badge { background: #ff9800; color: #fff; padding: 5px 10px; border-radius: 5px; font-size: 12px; display: inline-block; margin-bottom: 15px;}
-        .user-chip { text-align: center; font-size: 13px; color: var(--tg-theme-hint-color); margin-bottom: 18px; }
+        .admin-badge { background: #ff9800; color: #fff; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 12px; }
+        .user-chip { text-align: center; font-size: 13px; color: var(--tg-theme-hint-color); margin-bottom: 16px; }
+        #loader { text-align: center; color: var(--tg-theme-hint-color); font-weight: 500; margin-top: 20px; }
 
-        #loader { text-align: center; color: var(--tg-theme-hint-color); font-weight: bold; margin-top: 20px; }
+        /* Welcome */
+        .welcome-hero { text-align: center; padding: 16px 0 8px; }
+        .welcome-hero h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
+        .welcome-hero p { font-size: 14px; color: var(--tg-theme-hint-color); margin: 0 0 20px; }
+        .section-title { font-size: 16px; font-weight: 700; margin: 16px 0 10px; border-left: 3px solid var(--tg-theme-button-color, #3390ec); padding-left: 10px; }
+        .price-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+        .price-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 14px; }
+        .price-row:not(:last-child) { border-bottom: 1px solid rgba(128,128,128,0.15); }
+        .price-val { font-weight: 700; color: var(--tg-theme-button-color, #3390ec); white-space: nowrap; margin-left: 12px; }
+        .coach-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+        .coach-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
+        .coach-photo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
+        .coach-emoji { width: 52px; height: 52px; border-radius: 50%; background: var(--tg-theme-button-color, #3390ec); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .coach-name { font-weight: 700; font-size: 15px; }
+        .coach-tags { font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 2px; }
+        .coach-bio { font-size: 13px; line-height: 1.5; opacity: 0.85; }
+        .location-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; font-size: 14px; line-height: 1.7; }
+        .location-card a { color: var(--tg-theme-button-color, #3390ec); text-decoration: none; }
 
-        /* Экран успеха */
+        /* Результат */
         #result-screen { text-align: center; }
-        .result-icon { font-size: 56px; margin: 20px 0 10px; }
-        .result-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 16px; margin: 16px 0; text-align: left; font-size: 15px; line-height: 1.6; }
-        .result-card b { color: var(--tg-theme-text-color, #000); }
+        .result-icon { font-size: 56px; margin: 20px 0 8px; }
+        .result-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 16px; margin: 12px 0; text-align: left; font-size: 14px; line-height: 1.7; }
 
         /* Мои записи */
-        .booking-item { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 10px; padding: 12px 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; }
-        .booking-item .info { font-size: 14px; line-height: 1.4; }
+        .booking-item { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .booking-item .info { font-size: 14px; line-height: 1.5; flex: 1; }
+        .booking-item .info b { font-size: 15px; display: block; }
         .booking-item .info small { color: var(--tg-theme-hint-color); }
+        .cancel-btn { background: transparent; border: 1.5px solid #e64646; color: #e64646; border-radius: 8px; padding: 6px 10px; font-size: 12px; cursor: pointer; white-space: nowrap; flex-shrink: 0; }
         .empty-note { text-align: center; color: var(--tg-theme-hint-color); margin: 30px 0; }
     </style>
 </head>
 <body>
-
 <div class="container">
 
-    <!-- АВТОРИЗАЦИЯ -->
-    <div id="auth-screen">
-        <h2>Теннисный клуб 🎾</h2>
-        <p class="subtitle" id="auth-subtitle">Загружаем профиль…</p>
-
-        <!-- Поле телефона нужно только в браузере (для теста) или если хотим собрать номер -->
-        <div class="form-group hidden" id="phone-group">
-            <label>Телефон для связи</label>
-            <input type="tel" id="user-phone" placeholder="+7 ...">
+    <!-- WELCOME -->
+    <div id="welcome-screen">
+        <div class="welcome-hero">
+            <h1>Tennis Pro Novi Sad 🎾</h1>
+            <p>Теннис — игра для удовольствия и развития в любом возрасте!</p>
         </div>
 
+        <div class="section-title">Прайс-лист</div>
+        <div class="price-card">
+            <div class="price-row"><span>Аренда корта (1 / 1.5 / 2 часа)</span><span class="price-val">1000 RSD / ч</span></div>
+            <div class="price-row"><span>Индивидуальное занятие с тренером</span><span class="price-val">4000 RSD / ч</span></div>
+        </div>
+
+        <div class="section-title">Наши тренеры</div>
+        <div class="coach-card">
+            <div class="coach-header">
+                <div class="coach-emoji">🎾</div>
+                <div>
+                    <div class="coach-name">Галина</div>
+                    <div class="coach-tags">Стаж > 30 лет · US PTR Professional · KMC</div>
+                </div>
+            </div>
+            <div class="coach-bio">Действующий игрок ITF. Начальное обучение и турнирная подготовка (индивидуально, сплит, группы). Приглашаю совершенствовать мастерство вместе!</div>
+        </div>
+        <div class="coach-card">
+            <div class="coach-header">
+                <div class="coach-emoji">🎾</div>
+                <div>
+                    <div class="coach-name">Наталия Прохорская</div>
+                    <div class="coach-tags">Стаж 27 лет · Мастер Спорта · Сертификат US PTR</div>
+                </div>
+            </div>
+            <div class="coach-bio">Опыт работы в школе олимпийского резерва. Тренирует любителей и профессионалов. Подготовила множество кандидатов в мастера спорта.</div>
+        </div>
+
+        <div class="section-title">Где тренироваться</div>
+        <div class="location-card">
+            📍 <b>Meridiana</b> — Стојана Новаковића 2, Нови Сад<br><br>
+            🌳 <b>Через парк (короче):</b> войти в Нови парк, калитка рядом с детской площадкой — прямо на корты.<br><br>
+            🚗 <b>Со стороны Радујкова:</b> через ресторан до кортов 1–4, первый поворот направо — корты 5, 6, 7.<br><br>
+            <a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank">🗺 Открыть на карте</a>
+        </div>
+
+        <button class="btn" onclick="goToBooking()">Перейти к бронированию →</button>
+    </div>
+
+    <!-- АВТОРИЗАЦИЯ -->
+    <div id="auth-screen" class="hidden">
+        <h2>Tennis Pro 🎾</h2>
+        <p class="subtitle" id="auth-subtitle">Загружаем профиль…</p>
+        <div class="form-group hidden" id="phone-group">
+            <label>Телефон для связи</label>
+            <input type="tel" id="user-phone" placeholder="+381 ...">
+        </div>
         <button class="btn" id="login-btn" onclick="login()">Войти</button>
         <div id="loader" class="hidden">🔄 Загрузка расписания...</div>
     </div>
@@ -73,7 +139,7 @@
         <h2>Главное меню</h2>
         <div class="user-chip" id="user-chip"></div>
         <button class="btn" onclick="showScreen('court-booking-screen')">📅 Аренда корта</button>
-        <button class="btn" onclick="showScreen('coach-screen')">💪 С тренером</button>
+        <button class="btn" onclick="showScreen('coach-screen')">💪 Тренировка с тренером</button>
         <button class="btn btn-outline" onclick="openMyBookings()">📋 Мои записи</button>
         <button class="btn btn-outline hidden" id="admin-btn" onclick="showScreen('admin-screen')">⚙️ Панель Администратора</button>
     </div>
@@ -90,7 +156,7 @@
         </div>
         <div class="form-group">
             <label>Выберите дату:</label>
-            <input type="date" id="court-date" onchange="generateSlots('court')">
+            <div class="drum-date" id="court-drum"></div>
         </div>
         <div class="form-group hidden" id="court-slots-container">
             <label>Доступное время:</label>
@@ -110,19 +176,19 @@
         <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
     </div>
 
-    <!-- ЗАПИСЬ К ТРЕНЕРУ -->
+    <!-- ТРЕНЕР -->
     <div id="coach-screen" class="hidden">
-        <h2>Запись к тренеру</h2>
+        <h2>Тренировка с тренером</h2>
         <div class="form-group">
             <label>Выберите тренера:</label>
             <select id="coach-select" onchange="generateSlots('coach')">
-                <option value="Галина">Галина (на Корте 6)</option>
-                <option value="Наталья">Наталья (на Корте 7)</option>
+                <option value="Галина">Галина (Корт 6)</option>
+                <option value="Наталья">Наталья (Корт 7)</option>
             </select>
         </div>
         <div class="form-group">
             <label>Выберите дату:</label>
-            <input type="date" id="coach-date" onchange="generateSlots('coach')">
+            <div class="drum-date" id="coach-drum"></div>
         </div>
         <div class="form-group hidden" id="coach-slots-container">
             <label>Доступное время:</label>
@@ -145,12 +211,12 @@
     <!-- МОИ ЗАПИСИ -->
     <div id="my-screen" class="hidden">
         <h2>Мои записи</h2>
-        <p class="subtitle">Здесь видны все ваши предстоящие брони.</p>
+        <p class="subtitle">Предстоящие брони. Отменить можно за 3+ часа до начала.</p>
         <div id="my-list"></div>
         <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
     </div>
 
-    <!-- ЭКРАН УСПЕХА -->
+    <!-- УСПЕХ -->
     <div id="result-screen" class="hidden">
         <div class="result-icon">✅</div>
         <h2>Готово!</h2>
@@ -158,12 +224,11 @@
         <button class="btn" onclick="showScreen('main-screen')">В главное меню</button>
     </div>
 
-    <!-- ПАНЕЛЬ АДМИНА -->
+    <!-- АДМИН -->
     <div id="admin-screen" class="hidden">
         <div class="admin-badge">Режим управления расписанием</div>
         <h2>Блокировка слотов</h2>
         <p class="subtitle">Нажмите на свободный слот, чтобы закрыть его.</p>
-
         <div class="form-group">
             <label>Кого/Что редактируем?</label>
             <select id="admin-target" onchange="generateAdminSlots()">
@@ -175,7 +240,7 @@
         </div>
         <div class="form-group">
             <label>Дата:</label>
-            <input type="date" id="admin-date" onchange="generateAdminSlots()">
+            <div class="drum-date" id="admin-drum"></div>
         </div>
         <div class="time-grid" id="admin-time-grid"></div>
         <button class="btn btn-back" onclick="showScreen('main-screen')">В главное меню</button>
@@ -183,127 +248,145 @@
 </div>
 
 <script>
-    // Защита: если открыто в браузере вне Telegram — создаём заглушку
     const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : {
-        ready: () => {},
-        expand: () => {},
-        showAlert: (msg) => alert(msg),
-        HapticFeedback: null,
-        initDataUnsafe: {}
+        ready:()=>{}, expand:()=>{}, showAlert:(m)=>alert(m), HapticFeedback:null, initDataUnsafe:{}
     };
-    tg.ready();
-    tg.expand();
+    tg.ready(); tg.expand();
 
-    // === НАСТРОЙКИ ===
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiSZhoouByR9YpDA5uuFcr2MRiGnqqAcEFe7KM29NJ2y60IbIWEdmrqlHMZmOFOdM63A/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRlo2ArR5Z0RiRATPSFksJgdDiJQXA-Pu-UdLAfWvIAgYFy1n1LYXbTuHhWC7Cg1RJ_w/exec';
+    const ADMIN_IDS = [132787250];
 
-    // Telegram ID администраторов. Узнать свой ID можно у бота @userinfobot
-    const ADMIN_IDS = [132787250]; // сюда добавляй ID остальных админов через запятую
+    // Слоты 08:00 — 21:00 шаг 60 минут
+    const baseTimeSlots = [];
+    for (let h = 8; h <= 21; h++) baseTimeSlots.push(String(h).padStart(2,'0') + ':00');
 
-    // Нужно ли просить телефон. Если хватает имени из Telegram — поставь false.
-    const COLLECT_PHONE = false;
-
-    const baseTimeSlots = ["09:00", "10:30", "12:00", "13:30", "15:00", "16:30", "18:00", "19:30"];
-
-    // === СОСТОЯНИЕ ===
-    const tgUser = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : null;
-    let userId = tgUser ? String(tgUser.id) : "";
-    let userName = tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : "";
+    const tgUser  = (tg.initDataUnsafe && tg.initDataUnsafe.user) ? tg.initDataUnsafe.user : null;
+    let userId    = tgUser ? String(tgUser.id) : "";
+    let userName  = tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : "";
     let userPhone = "";
-    let isAdmin = false;
+    let isAdmin   = false;
     let selectedTime = "";
     let globalBookings = [];
 
-    window.onload = function() {
-        const today = new Date().toISOString().split('T')[0];
-        ['court-date', 'coach-date', 'admin-date'].forEach(id => {
-            document.getElementById(id).min = today;
+    // ── Барабан даты ──────────────────────────────────────────────────
+    function buildDrum(containerId, onChangeFn) {
+        const wrap = document.getElementById(containerId);
+        wrap.innerHTML = '';
+        const today = new Date();
+
+        const days = [], months = [], years = [];
+        for (let d = 1; d <= 31; d++) days.push({ v: String(d).padStart(2,'0'), l: String(d).padStart(2,'0') });
+        const mNames = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+        mNames.forEach((n,i) => months.push({ v: String(i+1).padStart(2,'0'), l: n }));
+        for (let y = today.getFullYear(); y <= today.getFullYear()+1; y++) years.push({ v: String(y), l: String(y) });
+
+        const dayS = makeSelect(days,   String(today.getDate()).padStart(2,'0'));
+        const monS = makeSelect(months, String(today.getMonth()+1).padStart(2,'0'));
+        const yrS  = makeSelect(years,  String(today.getFullYear()));
+
+        const fire = () => onChangeFn && onChangeFn(getDrumValue(containerId));
+        dayS.onchange = fire; monS.onchange = fire; yrS.onchange = fire;
+
+        [['День', dayS], ['Месяц', monS], ['Год', yrS]].forEach(([lbl, sel]) => {
+            const col = document.createElement('div'); col.className = 'drum-col';
+            const lb  = document.createElement('label'); lb.innerText = lbl;
+            col.appendChild(lb); col.appendChild(sel);
+            wrap.appendChild(col);
         });
+    }
+
+    function makeSelect(opts, defVal) {
+        const s = document.createElement('select'); s.className = 'drum-select';
+        opts.forEach(o => {
+            const op = document.createElement('option');
+            op.value = o.v; op.innerText = o.l;
+            if (o.v === defVal) op.selected = true;
+            s.appendChild(op);
+        });
+        return s;
+    }
+
+    function getDrumValue(containerId) {
+        const sels = document.getElementById(containerId).querySelectorAll('select');
+        if (sels.length < 3) return '';
+        return sels[2].value + '-' + sels[1].value + '-' + sels[0].value;
+    }
+
+    window.onload = function() {
+        buildDrum('court-drum', () => generateSlots('court'));
+        buildDrum('coach-drum', () => generateSlots('coach'));
+        buildDrum('admin-drum', () => generateAdminSlots());
 
         const sub = document.getElementById('auth-subtitle');
         if (tgUser) {
-            // Мы внутри Telegram — личность уже известна, телефон необязателен
-            sub.innerText = `Здравствуйте, ${userName || 'игрок'}! Нажмите «Войти», чтобы продолжить.`;
-            if (COLLECT_PHONE) {
-                document.getElementById('phone-group').classList.remove('hidden');
-                document.querySelector('#phone-group label').innerText = 'Телефон для связи (необязательно)';
-            }
+            sub.innerText = 'Здравствуйте, ' + (userName || 'игрок') + '! Нажмите «Войти», чтобы продолжить.';
         } else {
-            // Открыто в браузере для теста — Telegram-личности нет
             sub.innerHTML = 'Открыто вне Telegram (режим теста).<br>Введите телефон, чтобы продолжить. <small>(7777777777 — вход в админку)</small>';
             document.getElementById('phone-group').classList.remove('hidden');
         }
     };
 
+    function goToBooking() {
+        showScreen('auth-screen');
+        if (tgUser) login();
+    }
+
     async function login() {
         userPhone = (document.getElementById('user-phone').value || "").trim();
-
         if (!tgUser) {
-            // Браузерный режим: телефон обязателен и служит идентификатором
             if (userPhone.length < 5) return tg.showAlert("Введите корректный номер");
-            userId = "guest_" + userPhone;
+            userId   = "guest_" + userPhone;
             userName = userName || ("Гость " + userPhone);
         }
-
         isAdmin = ADMIN_IDS.includes(Number(userId)) || userPhone === "7777777777";
-
         document.getElementById('login-btn').classList.add('hidden');
         document.getElementById('loader').classList.remove('hidden');
-
         try {
-            const response = await fetch(SCRIPT_URL);
-            globalBookings = await response.json();
+            globalBookings = await (await fetch(SCRIPT_URL)).json();
             if (!Array.isArray(globalBookings)) globalBookings = [];
-        } catch (error) {
+        } catch(e) {
             globalBookings = [];
             tg.showAlert("Не удалось загрузить расписание. Проверьте соединение и попробуйте ещё раз.");
         }
-
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('login-btn').classList.remove('hidden');
-
-        document.getElementById('user-chip').innerText =
-            (userName ? userName : "Гость") + (userPhone ? " · " + userPhone : "");
+        document.getElementById('user-chip').innerText = (userName || "Гость") + (userPhone ? " · " + userPhone : "");
         if (isAdmin) document.getElementById('admin-btn').classList.remove('hidden');
-
         showScreen('main-screen');
     }
 
-    function showScreen(screenId) {
-        document.querySelectorAll('.container > div').forEach(div => div.classList.add('hidden'));
-        document.getElementById(screenId).classList.remove('hidden');
+    function showScreen(id) {
+        document.querySelectorAll('.container > div').forEach(d => d.classList.add('hidden'));
+        document.getElementById(id).classList.remove('hidden');
     }
 
-    // Связка тренеров и кортов: тренер занимает свой корт, и наоборот
-    function linkedTargets(target) {
-        const map = {
-            'Корт 6 (Грунт)': ['Корт 6 (Грунт)', 'Галина'],
-            'Галина': ['Галина', 'Корт 6 (Грунт)'],
-            'Корт 7 (Грунт)': ['Корт 7 (Грунт)', 'Наталья'],
-            'Наталья': ['Наталья', 'Корт 7 (Грунт)']
-        };
-        return map[target] || [target];
-    }
-
-    // Нормализуем дату в строку "YYYY-MM-DD" независимо от формата
+    // ── Нормализация ──────────────────────────────────────────────────
     function normalizeDate(d) {
         if (!d) return '';
         if (typeof d === 'string' && d.match(/^\d{4}-\d{2}-\d{2}$/)) return d;
-        const dt = new Date(d);
-        if (isNaN(dt)) return String(d);
-        const y = dt.getFullYear();
-        const m = String(dt.getMonth() + 1).padStart(2, '0');
-        const day = String(dt.getDate()).padStart(2, '0');
-        return `${y}-${m}-${day}`;
+        const dt = new Date(d); if (isNaN(dt)) return String(d);
+        return dt.getFullYear() + '-' + String(dt.getMonth()+1).padStart(2,'0') + '-' + String(dt.getDate()).padStart(2,'0');
     }
-
-    // Нормализуем время в строку "HH:MM"
     function normalizeTime(t) {
         if (!t) return '';
         if (typeof t === 'string' && t.match(/^\d{2}:\d{2}$/)) return t;
-        const dt = new Date(t);
-        if (isNaN(dt)) return String(t);
-        return String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
+        const dt = new Date(t); if (isNaN(dt)) return String(t);
+        return String(dt.getHours()).padStart(2,'0') + ':' + String(dt.getMinutes()).padStart(2,'0');
+    }
+    function formatDate(d) {
+        const s = normalizeDate(d); if (!s.includes('-')) return s;
+        const [y,m,day] = s.split('-'); return day + '.' + m + '.' + y;
+    }
+
+    // ── Связка корт/тренер ────────────────────────────────────────────
+    function linkedTargets(target) {
+        const map = {
+            'Корт 6 (Грунт)': ['Корт 6 (Грунт)', 'Галина'],
+            'Галина':          ['Галина', 'Корт 6 (Грунт)'],
+            'Корт 7 (Грунт)': ['Корт 7 (Грунт)', 'Наталья'],
+            'Наталья':         ['Наталья', 'Корт 7 (Грунт)']
+        };
+        return map[target] || [target];
     }
 
     function getOccupyingBooking(bookings, date, time, target) {
@@ -315,59 +398,52 @@
         );
     }
 
-    // Проверка, что слот уже в прошлом (для сегодняшней даты)
     function isPastSlot(date, time) {
         const today = new Date().toISOString().split('T')[0];
         if (date !== today) return false;
         const now = new Date();
-        const [h, m] = time.split(':').map(Number);
-        const slotDate = new Date();
-        slotDate.setHours(h, m, 0, 0);
-        return slotDate <= now;
+        const [h,m] = time.split(':').map(Number);
+        const slot = new Date(); slot.setHours(h,m,0,0);
+        return slot <= now;
     }
 
+    // ── Слоты ─────────────────────────────────────────────────────────
     function generateSlots(type) {
-        const dateId = type === 'court' ? 'court-date' : 'coach-date';
-        const targetId = type === 'court' ? 'court-select' : 'coach-select';
-        const containerId = type === 'court' ? 'court-slots-container' : 'coach-slots-container';
-        const gridId = type === 'court' ? 'court-time-grid' : 'coach-time-grid';
+        const drumId  = type === 'court' ? 'court-drum'   : 'coach-drum';
+        const targId  = type === 'court' ? 'court-select' : 'coach-select';
+        const contId  = type === 'court' ? 'court-slots-container'   : 'coach-slots-container';
+        const gridId  = type === 'court' ? 'court-time-grid'         : 'coach-time-grid';
+        const durId   = type === 'court' ? 'court-duration-container': 'coach-duration-container';
 
-        const date = document.getElementById(dateId).value;
-        const target = document.getElementById(targetId).value;
+        const date   = getDrumValue(drumId);
+        const target = document.getElementById(targId).value;
+        if (!date) return document.getElementById(contId).classList.add('hidden');
 
-        if (!date) return document.getElementById(containerId).classList.add('hidden');
-
-        document.getElementById(containerId).classList.remove('hidden');
-        const grid = document.getElementById(gridId);
-        grid.innerHTML = '';
-
-        // Скрываем длительность пока не выбрано время
-        const durContainer = type === 'court' ? 'court-duration-container' : 'coach-duration-container';
-        document.getElementById(durContainer).classList.add('hidden');
+        document.getElementById(contId).classList.remove('hidden');
+        document.getElementById(durId).classList.add('hidden');
         selectedTime = "";
 
+        const grid = document.getElementById(gridId);
+        grid.innerHTML = '';
         baseTimeSlots.forEach(time => {
             const btn = document.createElement('div');
-            const slotData = getOccupyingBooking(globalBookings, date, time, target);
-
+            const slot = getOccupyingBooking(globalBookings, date, time, target);
             if (isPastSlot(date, time)) {
                 btn.className = 'time-slot past';
-                btn.innerHTML = `${time} <span>Прошло</span>`;
-            } else if (slotData) {
-                let reason = slotData.isUser ? 'Занято' : 'Не работает';
-                if (slotData.target !== target) reason = `Занято (${slotData.target})`;
-                btn.className = 'time-slot ' + (slotData.isUser ? 'occupied' : 'admin-block');
-                btn.innerHTML = `${time} <span>${reason}</span>`;
+                btn.innerHTML = time + '<span>Прошло</span>';
+            } else if (slot) {
+                let reason = slot.isUser ? 'Занято' : 'Закрыто';
+                if (slot.target !== target) reason = 'Занято (' + slot.target + ')';
+                btn.className = 'time-slot ' + (slot.isUser ? 'occupied' : 'admin-block');
+                btn.innerHTML = time + '<span>' + reason + '</span>';
             } else {
                 btn.className = 'time-slot';
-                btn.innerHTML = `${time} <span>Выбрать</span>`;
+                btn.innerHTML = time + '<span>Выбрать</span>';
                 btn.onclick = () => {
-                    document.querySelectorAll(`#${gridId} .time-slot`).forEach(el => el.classList.remove('selected'));
+                    document.querySelectorAll('#' + gridId + ' .time-slot').forEach(el => el.classList.remove('selected'));
                     btn.classList.add('selected');
                     selectedTime = time;
-                    // показываем выбор длительности
-                    const durContainer = type === 'court' ? 'court-duration-container' : 'coach-duration-container';
-                    document.getElementById(durContainer).classList.remove('hidden');
+                    document.getElementById(durId).classList.remove('hidden');
                 };
             }
             grid.appendChild(btn);
@@ -375,38 +451,33 @@
     }
 
     function generateAdminSlots() {
-        const date = document.getElementById('admin-date').value;
+        const date   = getDrumValue('admin-drum');
         const target = document.getElementById('admin-target').value;
-        const grid = document.getElementById('admin-time-grid');
+        const grid   = document.getElementById('admin-time-grid');
         grid.innerHTML = '';
         if (!date) return;
-
         baseTimeSlots.forEach(time => {
-            const btn = document.createElement('div');
-            const slotData = getOccupyingBooking(globalBookings, date, time, target);
-
-            if (slotData) {
-                btn.className = 'time-slot ' + (slotData.isUser ? 'occupied' : 'admin-block');
-                const label = slotData.target !== target ? `Занято (${slotData.target})` : 'Занято';
-                btn.innerHTML = `${time} <span>${label}</span>`;
-                btn.onclick = () => tg.showAlert('Чтобы снять бронь или блокировку, удалите соответствующую строку в Google Таблице.');
+            const btn  = document.createElement('div');
+            const slot = getOccupyingBooking(globalBookings, date, time, target);
+            if (slot) {
+                btn.className = 'time-slot ' + (slot.isUser ? 'occupied' : 'admin-block');
+                btn.innerHTML = time + '<span>' + (slot.target !== target ? 'Занято (' + slot.target + ')' : 'Занято') + '</span>';
+                btn.onclick = () => tg.showAlert('Чтобы снять бронь или блокировку, удалите строку в Google Таблице.');
             } else {
                 btn.className = 'time-slot';
-                btn.innerHTML = `${time} <span>Свободно (Закрыть)</span>`;
+                btn.innerHTML = time + '<span>Свободно</span>';
                 btn.onclick = () => {
-                    let blockData = { date, time, target: target, isUser: false, phone: "Админ", tgId: userId, name: userName };
-                    globalBookings.push(blockData);
+                    const bd = { date, time, target, isUser: false, phone: "Админ", tgId: userId, name: userName };
+                    globalBookings.push(bd);
                     generateAdminSlots();
-                    sendBooking(blockData).catch(e => console.log(e));
+                    sendBooking(bd).catch(e => console.log(e));
                 };
             }
             grid.appendChild(btn);
         });
     }
 
-    // Единая отправка данных в таблицу
     function sendBooking(data) {
-        // text/plain — чтобы не было CORS-preflight, который Apps Script не обрабатывает
         return fetch(SCRIPT_URL, {
             method: 'POST',
             headers: { 'Content-Type': 'text/plain;charset=utf-8' },
@@ -415,115 +486,113 @@
     }
 
     async function submitData(type) {
-        const dateId = type === 'court' ? 'court-date' : 'coach-date';
-        const targetId = type === 'court' ? 'court-select' : 'coach-select';
-        const btnId = type === 'court' ? 'court-submit' : 'coach-submit';
-        const durId = type === 'court' ? 'court-duration' : 'coach-duration';
+        const drumId  = type === 'court' ? 'court-drum'    : 'coach-drum';
+        const targId  = type === 'court' ? 'court-select'  : 'coach-select';
+        const btnId   = type === 'court' ? 'court-submit'  : 'coach-submit';
+        const durId   = type === 'court' ? 'court-duration': 'coach-duration';
 
-        const date = document.getElementById(dateId).value;
-        const target = document.getElementById(targetId).value;
+        const date     = getDrumValue(drumId);
+        const target   = document.getElementById(targId).value;
         const duration = parseFloat(document.getElementById(durId).value);
+        const isCoach  = (type === 'coach');
 
         if (!date || !selectedTime) return tg.showAlert("Выберите дату и время!");
         if (isPastSlot(date, selectedTime)) return tg.showAlert("Это время уже прошло, выберите другое.");
 
         const btn = document.getElementById(btnId);
-        const originalText = btn.innerText;
-        btn.disabled = true;
-        btn.innerText = "Проверяем…";
+        const origText = btn.innerText;
+        btn.disabled = true; btn.innerText = "Проверяем…";
 
-        const bookingData = {
-            date,
-            time: selectedTime,
-            target,
-            isUser: true,
-            phone: userPhone,
-            tgId: userId,
-            name: userName
-        };
+        const bookingData = { date, time: selectedTime, target, isUser: true, phone: userPhone, tgId: userId, name: userName };
 
         try {
-            try {
-                const fresh = await (await fetch(SCRIPT_URL)).json();
-                if (Array.isArray(fresh)) globalBookings = fresh;
-            } catch (_) {}
+            try { const f = await (await fetch(SCRIPT_URL)).json(); if (Array.isArray(f)) globalBookings = f; } catch(_){}
 
             if (getOccupyingBooking(globalBookings, date, selectedTime, target)) {
                 tg.showAlert("Увы, это время только что заняли. Выберите другое.");
-                generateSlots(type);
-                return;
+                generateSlots(type); return;
             }
 
             btn.innerText = "Отправляем…";
             const res = await sendBooking(bookingData);
-
             let ok = true;
-            try {
-                const json = await res.json();
-                if (json && json.ok === false) ok = false;
-            } catch (_) {}
+            try { const j = await res.json(); if (j && j.ok === false) ok = false; } catch(_){}
 
             if (!ok) {
                 tg.showAlert("Это время только что заняли. Выберите другое.");
-                try { globalBookings = await (await fetch(SCRIPT_URL)).json(); } catch (_) {}
-                generateSlots(type);
-                return;
+                try { globalBookings = await (await fetch(SCRIPT_URL)).json(); } catch(_){}
+                generateSlots(type); return;
             }
 
             globalBookings.push(bookingData);
-
-            const durationText = duration === 1 ? '1 час' :
-                duration === 1.5 ? '1.5 часа' :
-                duration === 2 ? '2 часа' :
-                duration === 2.5 ? '2.5 часа' : '3 часа';
+            const durText = duration===1?'1 час':duration===1.5?'1.5 часа':duration===2?'2 часа':duration===2.5?'2.5 часа':'3 часа';
+            const label   = isCoach ? ('Тренировка с тренером ' + target) : target;
 
             document.getElementById('result-text').innerHTML =
-                `<b>${target}</b><br>📅 ${formatDate(date)}<br>🕐 ${selectedTime} · ${durationText}` +
-                (userName ? `<br>👤 ${userName}` : '') +
-                `<br><br>📍 <b>Meridiana</b> — Стојана Новаковића 2, Нови Сад<br><br>` +
-                `🌳 <b>Через парк (короче):</b> войти в Нови парк, найти калитку рядом с детской площадкой — она ведёт прямо на корты.<br><br>` +
-                `🚗 <b>Со стороны ул. Радомира Раше Радујкова:</b> пройти через ресторан до кортов 1–4, на первом повороте направо — корты 5, 6, 7.<br><br>` +
-                `🗺 <a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank" style="color: var(--tg-theme-button-color, #3390ec);">Открыть на карте</a>`;
+                '<b>' + label + '</b><br>📅 ' + formatDate(date) + '<br>🕐 ' + selectedTime + ' · ' + durText +
+                (userName ? '<br>👤 ' + userName : '') +
+                '<br><br>📍 <b>Meridiana</b> — Стојана Новаковића 2, Нови Сад<br><br>' +
+                '🌳 <b>Через парк:</b> калитка рядом с детской площадкой в Нови парке.<br>' +
+                '🚗 <b>Со стороны Радујкова:</b> через ресторан, первый поворот направо — корты 5, 6, 7.<br><br>' +
+                '<a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank" style="color:var(--tg-theme-button-color,#3390ec)">🗺 Открыть на карте</a>';
 
             showScreen('result-screen');
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             selectedTime = "";
-        } catch (e) {
+        } catch(e) {
             tg.showAlert("Не удалось сохранить запись. Проверьте интернет и попробуйте снова.");
         } finally {
-            btn.disabled = false;
-            btn.innerText = originalText;
+            btn.disabled = false; btn.innerText = origText;
         }
     }
 
-    function formatDate(d) {
-        const s = normalizeDate(d);
-        if (!s.includes('-')) return s;
-        const [y, m, day] = s.split('-');
-        return `${day}.${m}.${y}`;
-    }
-
-    // === МОИ ЗАПИСИ ===
+    // ── Мои записи ────────────────────────────────────────────────────
     function openMyBookings() {
-        const list = document.getElementById('my-list');
+        const list  = document.getElementById('my-list');
         const today = new Date().toISOString().split('T')[0];
+        const now   = new Date();
 
         const mine = globalBookings.filter(b => {
             const d = normalizeDate(b.date);
             return b.isUser &&
                 ((b.tgId && String(b.tgId) === userId) || (userPhone && b.phone === userPhone)) &&
                 d >= today;
-        }).sort((a, b) => (normalizeDate(a.date) + normalizeTime(a.time)).localeCompare(normalizeDate(b.date) + normalizeTime(b.time)));
+        }).sort((a,b) => (normalizeDate(a.date)+normalizeTime(a.time)).localeCompare(normalizeDate(b.date)+normalizeTime(b.time)));
 
         if (mine.length === 0) {
             list.innerHTML = '<div class="empty-note">Пока нет предстоящих записей.</div>';
         } else {
-            list.innerHTML = mine.map(b => `
-                <div class="booking-item">
-                    <div class="info"><b>${b.target}</b><br><small>${formatDate(b.date)} · ${normalizeTime(b.time)}</small></div>
-                </div>`).join('');
+            list.innerHTML = mine.map(b => {
+                const nd = normalizeDate(b.date), nt = normalizeTime(b.time);
+                const [yr,mo,dy] = nd.split('-').map(Number);
+                const [hh,mm]    = nt.split(':').map(Number);
+                const diff = (new Date(yr,mo-1,dy,hh,mm) - now) / (1000*60*60);
+                const canCancel  = diff > 3;
+                const lbl = (b.target==='Галина'||b.target==='Наталья') ? 'Тренировка с тренером ' + b.target : b.target;
+                const dStr = nd.replace(/'/g,"").replace(/"/g,"");
+                const tStr = nt.replace(/'/g,"").replace(/"/g,"");
+                const tgStr = b.target.replace(/'/g,"\\'");
+                return '<div class="booking-item">' +
+                    '<div class="info"><b>' + lbl + '</b><small>' + formatDate(nd) + ' · ' + nt + '</small></div>' +
+                    (canCancel ? '<button class="cancel-btn" onclick="cancelBooking(\'' + dStr + '\',\'' + tStr + '\',\'' + tgStr + '\')">Отменить</button>' : '') +
+                    '</div>';
+            }).join('');
         }
         showScreen('my-screen');
+    }
+
+    async function cancelBooking(date, time, target) {
+        if (!confirm('Отменить запись?\n' + target + ' · ' + formatDate(date) + ' в ' + time)) return;
+        try {
+            await sendBooking({ action: 'cancel', date, time, target, tgId: userId });
+            globalBookings = globalBookings.filter(b =>
+                !(normalizeDate(b.date)===date && normalizeTime(b.time)===time && b.target===target)
+            );
+            tg.showAlert("Запись отменена.");
+            openMyBookings();
+        } catch(e) {
+            tg.showAlert("Не удалось отменить. Попробуйте ещё раз.");
+        }
     }
 </script>
 </body>
