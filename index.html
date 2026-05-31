@@ -84,8 +84,8 @@
         <div class="form-group">
             <label>Выберите корт:</label>
             <select id="court-select" onchange="generateSlots('court')">
-                <option value="Корт 1">Корт 1 (Грунт)</option>
-                <option value="Корт 2">Корт 2 (Хард)</option>
+                <option value="Корт 6 (Грунт)">Корт 6 (Грунт)</option>
+                <option value="Корт 7 (Грунт)">Корт 7 (Грунт)</option>
             </select>
         </div>
         <div class="form-group">
@@ -95,6 +95,16 @@
         <div class="form-group hidden" id="court-slots-container">
             <label>Доступное время:</label>
             <div class="time-grid" id="court-time-grid"></div>
+        </div>
+        <div class="form-group hidden" id="court-duration-container">
+            <label>Длительность:</label>
+            <select id="court-duration">
+                <option value="1">1 час</option>
+                <option value="1.5">1.5 часа</option>
+                <option value="2">2 часа</option>
+                <option value="2.5">2.5 часа</option>
+                <option value="3">3 часа</option>
+            </select>
         </div>
         <button class="btn" id="court-submit" onclick="submitData('court')">Забронировать</button>
         <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
@@ -106,8 +116,8 @@
         <div class="form-group">
             <label>Выберите тренера:</label>
             <select id="coach-select" onchange="generateSlots('coach')">
-                <option value="Галина">Галина (на Корте 1)</option>
-                <option value="Наталья">Наталья (на Корте 2)</option>
+                <option value="Галина">Галина (на Корте 6)</option>
+                <option value="Наталья">Наталья (на Корте 7)</option>
             </select>
         </div>
         <div class="form-group">
@@ -117,6 +127,16 @@
         <div class="form-group hidden" id="coach-slots-container">
             <label>Доступное время:</label>
             <div class="time-grid" id="coach-time-grid"></div>
+        </div>
+        <div class="form-group hidden" id="coach-duration-container">
+            <label>Длительность:</label>
+            <select id="coach-duration">
+                <option value="1">1 час</option>
+                <option value="1.5">1.5 часа</option>
+                <option value="2">2 часа</option>
+                <option value="2.5">2.5 часа</option>
+                <option value="3">3 часа</option>
+            </select>
         </div>
         <button class="btn" id="coach-submit" onclick="submitData('coach')">Записаться</button>
         <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
@@ -147,8 +167,8 @@
         <div class="form-group">
             <label>Кого/Что редактируем?</label>
             <select id="admin-target" onchange="generateAdminSlots()">
-                <option value="Корт 1">Корт 1</option>
-                <option value="Корт 2">Корт 2</option>
+                <option value="Корт 6 (Грунт)">Корт 6</option>
+                <option value="Корт 7 (Грунт)">Корт 7</option>
                 <option value="Галина">Тренер: Галина</option>
                 <option value="Наталья">Тренер: Наталья</option>
             </select>
@@ -163,12 +183,19 @@
 </div>
 
 <script>
-    const tg = window.Telegram.WebApp;
+    // Защита: если открыто в браузере вне Telegram — создаём заглушку
+    const tg = (window.Telegram && window.Telegram.WebApp) ? window.Telegram.WebApp : {
+        ready: () => {},
+        expand: () => {},
+        showAlert: (msg) => alert(msg),
+        HapticFeedback: null,
+        initDataUnsafe: {}
+    };
     tg.ready();
     tg.expand();
 
     // === НАСТРОЙКИ ===
-    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyiSZhoouByR9YpDA5uuFcr2MRiGnqqAcEFe7KM29NJ2y60IbIWEdmrqlHMZmOFOdM63A/exec';
+    const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRlo2ArR5Z0RiRATPSFksJgdDiJQXA-Pu-UdLAfWvIAgYFy1n1LYXbTuHhWC7Cg1RJ_w/exec';
 
     // Telegram ID администраторов. Узнать свой ID можно у бота @userinfobot
     const ADMIN_IDS = [132787250]; // сюда добавляй ID остальных админов через запятую
@@ -250,18 +277,41 @@
     // Связка тренеров и кортов: тренер занимает свой корт, и наоборот
     function linkedTargets(target) {
         const map = {
-            'Корт 1': ['Корт 1', 'Галина'],
-            'Галина': ['Галина', 'Корт 1'],
-            'Корт 2': ['Корт 2', 'Наталья'],
-            'Наталья': ['Наталья', 'Корт 2']
+            'Корт 6 (Грунт)': ['Корт 6 (Грунт)', 'Галина'],
+            'Галина': ['Галина', 'Корт 6 (Грунт)'],
+            'Корт 7 (Грунт)': ['Корт 7 (Грунт)', 'Наталья'],
+            'Наталья': ['Наталья', 'Корт 7 (Грунт)']
         };
         return map[target] || [target];
+    }
+
+    // Нормализуем дату в строку "YYYY-MM-DD" независимо от формата
+    function normalizeDate(d) {
+        if (!d) return '';
+        if (typeof d === 'string' && d.match(/^\d{4}-\d{2}-\d{2}$/)) return d;
+        const dt = new Date(d);
+        if (isNaN(dt)) return String(d);
+        const y = dt.getFullYear();
+        const m = String(dt.getMonth() + 1).padStart(2, '0');
+        const day = String(dt.getDate()).padStart(2, '0');
+        return `${y}-${m}-${day}`;
+    }
+
+    // Нормализуем время в строку "HH:MM"
+    function normalizeTime(t) {
+        if (!t) return '';
+        if (typeof t === 'string' && t.match(/^\d{2}:\d{2}$/)) return t;
+        const dt = new Date(t);
+        if (isNaN(dt)) return String(t);
+        return String(dt.getHours()).padStart(2, '0') + ':' + String(dt.getMinutes()).padStart(2, '0');
     }
 
     function getOccupyingBooking(bookings, date, time, target) {
         const conflicts = linkedTargets(target);
         return bookings.find(b =>
-            b.date === date && b.time === time && conflicts.indexOf(b.target) !== -1
+            normalizeDate(b.date) === normalizeDate(date) &&
+            normalizeTime(b.time) === normalizeTime(time) &&
+            conflicts.indexOf(b.target) !== -1
         );
     }
 
@@ -290,6 +340,10 @@
         document.getElementById(containerId).classList.remove('hidden');
         const grid = document.getElementById(gridId);
         grid.innerHTML = '';
+
+        // Скрываем длительность пока не выбрано время
+        const durContainer = type === 'court' ? 'court-duration-container' : 'coach-duration-container';
+        document.getElementById(durContainer).classList.add('hidden');
         selectedTime = "";
 
         baseTimeSlots.forEach(time => {
@@ -311,6 +365,9 @@
                     document.querySelectorAll(`#${gridId} .time-slot`).forEach(el => el.classList.remove('selected'));
                     btn.classList.add('selected');
                     selectedTime = time;
+                    // показываем выбор длительности
+                    const durContainer = type === 'court' ? 'court-duration-container' : 'coach-duration-container';
+                    document.getElementById(durContainer).classList.remove('hidden');
                 };
             }
             grid.appendChild(btn);
@@ -361,9 +418,11 @@
         const dateId = type === 'court' ? 'court-date' : 'coach-date';
         const targetId = type === 'court' ? 'court-select' : 'coach-select';
         const btnId = type === 'court' ? 'court-submit' : 'coach-submit';
+        const durId = type === 'court' ? 'court-duration' : 'coach-duration';
 
         const date = document.getElementById(dateId).value;
-        const target = document.getElementById(targetId).value; // полное имя: "Корт 1" / "Галина" и т.д.
+        const target = document.getElementById(targetId).value;
+        const duration = parseFloat(document.getElementById(durId).value);
 
         if (!date || !selectedTime) return tg.showAlert("Выберите дату и время!");
         if (isPastSlot(date, selectedTime)) return tg.showAlert("Это время уже прошло, выберите другое.");
@@ -384,7 +443,6 @@
         };
 
         try {
-            // Обновляем расписание, чтобы поймать брони, сделанные другими прямо сейчас
             try {
                 const fresh = await (await fetch(SCRIPT_URL)).json();
                 if (Array.isArray(fresh)) globalBookings = fresh;
@@ -399,12 +457,11 @@
             btn.innerText = "Отправляем…";
             const res = await sendBooking(bookingData);
 
-            // Сервер может вернуть {ok:false} если слот заняли в последний момент
             let ok = true;
             try {
                 const json = await res.json();
                 if (json && json.ok === false) ok = false;
-            } catch (_) { /* ответ нечитаем из-за CORS — считаем успехом */ }
+            } catch (_) {}
 
             if (!ok) {
                 tg.showAlert("Это время только что заняли. Выберите другое.");
@@ -414,9 +471,20 @@
             }
 
             globalBookings.push(bookingData);
+
+            const durationText = duration === 1 ? '1 час' :
+                duration === 1.5 ? '1.5 часа' :
+                duration === 2 ? '2 часа' :
+                duration === 2.5 ? '2.5 часа' : '3 часа';
+
             document.getElementById('result-text').innerHTML =
-                `<b>${target}</b><br>📅 ${formatDate(date)}<br>🕐 ${selectedTime}` +
-                (userName ? `<br>👤 ${userName}` : '');
+                `<b>${target}</b><br>📅 ${formatDate(date)}<br>🕐 ${selectedTime} · ${durationText}` +
+                (userName ? `<br>👤 ${userName}` : '') +
+                `<br><br>📍 <b>Meridiana</b> — Стојана Новаковића 2, Нови Сад<br><br>` +
+                `🌳 <b>Через парк (короче):</b> войти в Нови парк, найти калитку рядом с детской площадкой — она ведёт прямо на корты.<br><br>` +
+                `🚗 <b>Со стороны ул. Радомира Раше Радујкова:</b> пройти через ресторан до кортов 1–4, на первом повороте направо — корты 5, 6, 7.<br><br>` +
+                `🗺 <a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank" style="color: var(--tg-theme-button-color, #3390ec);">Открыть на карте</a>`;
+
             showScreen('result-screen');
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             selectedTime = "";
@@ -429,7 +497,9 @@
     }
 
     function formatDate(d) {
-        const [y, m, day] = d.split('-');
+        const s = normalizeDate(d);
+        if (!s.includes('-')) return s;
+        const [y, m, day] = s.split('-');
         return `${day}.${m}.${y}`;
     }
 
@@ -438,18 +508,19 @@
         const list = document.getElementById('my-list');
         const today = new Date().toISOString().split('T')[0];
 
-        const mine = globalBookings.filter(b =>
-            b.isUser &&
-            ((b.tgId && String(b.tgId) === userId) || (userPhone && b.phone === userPhone)) &&
-            b.date >= today
-        ).sort((a, b) => (a.date + a.time).localeCompare(b.date + b.time));
+        const mine = globalBookings.filter(b => {
+            const d = normalizeDate(b.date);
+            return b.isUser &&
+                ((b.tgId && String(b.tgId) === userId) || (userPhone && b.phone === userPhone)) &&
+                d >= today;
+        }).sort((a, b) => (normalizeDate(a.date) + normalizeTime(a.time)).localeCompare(normalizeDate(b.date) + normalizeTime(b.time)));
 
         if (mine.length === 0) {
             list.innerHTML = '<div class="empty-note">Пока нет предстоящих записей.</div>';
         } else {
             list.innerHTML = mine.map(b => `
                 <div class="booking-item">
-                    <div class="info"><b>${b.target}</b><br><small>${formatDate(b.date)} · ${b.time}</small></div>
+                    <div class="info"><b>${b.target}</b><br><small>${formatDate(b.date)} · ${normalizeTime(b.time)}</small></div>
                 </div>`).join('');
         }
         showScreen('my-screen');
