@@ -91,7 +91,7 @@
 
         <div class="section-title" id="w-price-title">Прайс-лист</div>
         <div class="price-card">
-            <div class="price-row"><span id="w-p1">Аренда корта (1 / 1.5 / 2 часа)</span><span class="price-val">1000 RSD / ч</span></div>
+            <div class="price-row"><span id="w-p1">Аренда корта (Meridiana)</span><span class="price-val">1000 RSD / ч</span></div>
             <div class="price-row"><span id="w-p2">Индивидуальное занятие с тренером</span><span class="price-val">4000 RSD / ч</span></div>
             <div class="price-row"><span id="w-p3">Перетяжка струн</span><span class="price-val">3000 RSD</span></div>
         </div>
@@ -103,27 +103,26 @@
                 <div class="coach-emoji" style="display:none">🎾</div>
                 <div>
                     <div class="coach-name">Галина</div>
-                    <div class="coach-tags" id="w-g-tags">Стаж > 30 лет · US PTR Professional · KMC</div>
+                    <div class="coach-tags" id="w-g-tags">Стаж: 30+ лет · US PTR Professional · KMC</div>
                 </div>
             </div>
-            <div class="coach-bio" id="w-g-bio">Действующий игрок ITF. Начальное обучение и турнирная подготовка (индивидуально, сплит, группы). Приглашаю совершенствовать мастерство вместе!</div>
-        </div>
+            <div class="coach-bio" id="w-g-bio">Действующий игрок ITF. Начальное обучение и турнирная подготовка (индивидуально, сплит, группы). 
         <div class="coach-card">
             <div class="coach-header">
                 <img class="coach-photo" src="https://raw.githubusercontent.com/brave-katrin/tennis_bot/main/natalia.jpg" alt="Наталия" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                 <div class="coach-emoji" style="display:none">🎾</div>
                 <div>
                     <div class="coach-name">Наталия Прохорская</div>
-                    <div class="coach-tags" id="w-n-tags">Стаж 27 лет · Мастер Спорта · Сертификат US PTR</div>
+                    <div class="coach-tags" id="w-n-tags">Стаж: 27+ лет · Сертификат US PTR</div>
                 </div>
             </div>
-            <div class="coach-bio" id="w-n-bio">Опыт работы в школе олимпийского резерва. Тренирует любителей и профессионалов. Подготовила множество кандидатов в мастера спорта.</div>
+            <div class="coach-bio" id="w-n-bio">Действующий игрок ITF. Тренирует детей, любителей и профессионалов. </div>
         </div>
 
         <div class="section-title" id="w-loc-title">Где тренироваться</div>
         <div class="location-card" id="w-loc-text">
             📍 <b>Meridiana</b> — Стојана Новаковића 2, Нови Сад<br><br>
-            🌳 <b id="w-park-label">Через парк (короче):</b> <span id="w-park-text">войти в Нови парк, калитка рядом с детской площадкой — прямо на корты.</span><br><br>
+            🌳 <b id="w-park-label">Через парк (короткий маршрут):</b> <span id="w-park-text">войти в Нови парк, калитка рядом с детской площадкой — прямо на корты.</span><br><br>
             🚗 <b id="w-road-label">Со стороны Радујкова:</b> <span id="w-road-text">через ресторан до кортов 1–4, первый поворот направо — корты 5, 6, 7.</span><br><br>
             <a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank" id="w-map-link">🗺 Открыть на карте</a>
         </div>
@@ -147,7 +146,7 @@
     <div id="main-screen" class="hidden">
         <h2 id="lbl-menu">Главное меню</h2>
         <div class="user-chip" id="user-chip"></div>
-        <button class="btn" onclick="showScreen('court-booking-screen')" id="btn-court">📅 Аренда корта</button>
+        <button class="btn" onclick="showScreen('court-booking-screen')" id="btn-court">📅 Аренда корта (Meridiana)</button>
         <button class="btn" onclick="showScreen('coach-screen')" id="btn-coach">💪 Тренировка с тренером</button>
         <button class="btn btn-outline" onclick="openMyBookings()" id="btn-mybookings">📋 Мои записи</button>
         <button class="btn btn-outline hidden" id="admin-btn" onclick="showScreen('admin-screen')">⚙️ Панель Администратора</button>
@@ -159,8 +158,8 @@
         <div class="form-group">
             <label id="lbl-court-select">Выберите корт:</label>
             <select id="court-select" onchange="generateSlots('court')">
-                <option value="Корт 6 (Грунт)" id="opt-court6">Корт 6 (Грунт)</option>
-                <option value="Корт 7 (Грунт)" id="opt-court7">Корт 7 (Грунт)</option>
+                <option value="Корт 6 (Грунт)" id="opt-court6">Meridiana, Корт 6 (Грунт)</option>
+                <option value="Корт 7 (Грунт)" id="opt-court7">Meridiana, Корт 7 (Грунт)</option>
             </select>
         </div>
         <div class="form-group">
