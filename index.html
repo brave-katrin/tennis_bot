@@ -7,65 +7,67 @@
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
     <style>
         * { box-sizing: border-box; }
-        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--tg-theme-bg-color, #ffffff); color: var(--tg-theme-text-color, #000000); margin: 0; padding: 0 16px 24px; display: flex; flex-direction: column; align-items: center; }
+        body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: var(--tg-theme-bg-color,#fff); color: var(--tg-theme-text-color,#000); margin: 0; padding: 0 16px 24px; display: flex; flex-direction: column; align-items: center; }
         .container { width: 100%; max-width: 420px; }
         h2 { text-align: center; margin: 16px 0 8px; }
         p.subtitle { text-align: center; color: var(--tg-theme-hint-color); margin: 0 0 20px; font-size: 14px; }
-        .btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #ffffff); border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
-        .btn:active { opacity: 0.8; }
-        .btn:disabled { opacity: 0.5; cursor: default; }
-        .btn-outline { background-color: transparent; color: var(--tg-theme-button-color, #3390ec); border: 2px solid var(--tg-theme-button-color, #3390ec); }
-        .btn-back { background-color: var(--tg-theme-secondary-bg-color, #f0f0f0); color: var(--tg-theme-text-color, #000); margin-top: 8px; }
+        .btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; background-color: var(--tg-theme-button-color,#3390ec); color: var(--tg-theme-button-text-color,#fff); border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: opacity .15s; }
+        .btn:active { opacity: 0.8; } .btn:disabled { opacity: 0.5; cursor: default; }
+        .btn-outline { background-color: transparent; color: var(--tg-theme-button-color,#3390ec); border: 2px solid var(--tg-theme-button-color,#3390ec); }
+        .btn-back { background-color: var(--tg-theme-secondary-bg-color,#f0f0f0); color: var(--tg-theme-text-color,#000); margin-top: 8px; }
         .form-group { margin-bottom: 16px; }
         label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px; color: var(--tg-theme-hint-color); }
-        select, input[type=tel] { width: 100%; padding: 12px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 10px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); font-size: 15px; }
-
-        /* Барабан */
+        select, input[type=tel], textarea { width: 100%; padding: 12px; border: 1px solid var(--tg-theme-hint-color,#ccc); border-radius: 10px; background-color: var(--tg-theme-bg-color,#fff); color: var(--tg-theme-text-color,#000); font-size: 15px; }
+        textarea { resize: none; font-family: inherit; }
         .drum-date { display: flex; gap: 8px; }
         .drum-col { flex: 1; display: flex; flex-direction: column; align-items: center; gap: 4px; }
         .drum-col label { font-size: 11px; color: var(--tg-theme-hint-color); margin: 0; }
-        .drum-select { width: 100%; padding: 10px 4px; border: 1px solid var(--tg-theme-hint-color, #ccc); border-radius: 10px; background-color: var(--tg-theme-bg-color, #fff); color: var(--tg-theme-text-color, #000); font-size: 15px; text-align: center; }
-
-        /* Слоты */
+        .drum-select { width: 100%; padding: 10px 4px; border: 1px solid var(--tg-theme-hint-color,#ccc); border-radius: 10px; background-color: var(--tg-theme-bg-color,#fff); color: var(--tg-theme-text-color,#000); font-size: 15px; text-align: center; }
         .time-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
-        .time-slot { padding: 10px 6px; text-align: center; border: 1.5px solid var(--tg-theme-button-color, #3390ec); border-radius: 10px; color: var(--tg-theme-text-color, #000); cursor: pointer; font-size: 15px; font-weight: 500; }
-        .time-slot.selected { background-color: var(--tg-theme-button-color, #3390ec); color: var(--tg-theme-button-text-color, #fff); }
+        .time-slot { padding: 10px 6px; text-align: center; border: 1.5px solid var(--tg-theme-button-color,#3390ec); border-radius: 10px; color: var(--tg-theme-text-color,#000); cursor: pointer; font-size: 15px; font-weight: 500; }
+        .time-slot.selected { background-color: var(--tg-theme-button-color,#3390ec); color: var(--tg-theme-button-text-color,#fff); }
         .time-slot.occupied { border-color: #e64646; color: #e64646; background-color: rgba(230,70,70,0.05); cursor: not-allowed; }
         .time-slot.admin-block { border-color: #ff9800; color: #ff9800; background-color: rgba(255,152,0,0.08); cursor: not-allowed; }
         .time-slot.past { border-color: var(--tg-theme-hint-color,#ccc); color: var(--tg-theme-hint-color,#999); opacity: 0.5; cursor: not-allowed; }
         .time-slot span { display: block; font-size: 10px; opacity: 0.75; font-weight: 400; margin-top: 2px; }
-
         .hidden { display: none !important; }
         .admin-badge { background: #ff9800; color: #fff; padding: 5px 12px; border-radius: 6px; font-size: 12px; font-weight: 600; display: inline-block; margin-bottom: 12px; }
         .user-chip { text-align: center; font-size: 13px; color: var(--tg-theme-hint-color); margin-bottom: 16px; }
         #loader { text-align: center; color: var(--tg-theme-hint-color); font-weight: 500; margin-top: 20px; }
-
+        /* Переключатель языка */
+        .lang-switcher { display: flex; justify-content: flex-end; padding: 10px 0 0; gap: 6px; }
+        .lang-btn { padding: 4px 12px; border-radius: 20px; border: 1.5px solid var(--tg-theme-button-color,#3390ec); background: transparent; color: var(--tg-theme-button-color,#3390ec); font-size: 13px; font-weight: 600; cursor: pointer; }
+        .lang-btn.active { background: var(--tg-theme-button-color,#3390ec); color: var(--tg-theme-button-text-color,#fff); }
         /* Welcome */
-        .welcome-hero { text-align: center; padding: 16px 0 8px; }
+        .welcome-hero { text-align: center; padding: 8px 0 8px; }
         .welcome-hero h1 { font-size: 22px; font-weight: 700; margin: 0 0 4px; }
-        .welcome-hero p { font-size: 14px; color: var(--tg-theme-hint-color); margin: 0 0 20px; }
-        .section-title { font-size: 16px; font-weight: 700; margin: 16px 0 10px; border-left: 3px solid var(--tg-theme-button-color, #3390ec); padding-left: 10px; }
-        .price-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
+        .welcome-hero p { font-size: 14px; color: var(--tg-theme-hint-color); margin: 0 0 12px; }
+        .section-title { font-size: 16px; font-weight: 700; margin: 16px 0 10px; border-left: 3px solid var(--tg-theme-button-color,#3390ec); padding-left: 10px; }
+        .price-card { background: var(--tg-theme-secondary-bg-color,#f5f5f5); border-radius: 12px; overflow: hidden; margin-bottom: 16px; }
         .price-row { display: flex; justify-content: space-between; align-items: center; padding: 12px 16px; font-size: 14px; }
         .price-row:not(:last-child) { border-bottom: 1px solid rgba(128,128,128,0.15); }
-        .price-val { font-weight: 700; color: var(--tg-theme-button-color, #3390ec); white-space: nowrap; margin-left: 12px; }
-        .coach-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
+        .price-val { font-weight: 700; color: var(--tg-theme-button-color,#3390ec); white-space: nowrap; margin-left: 12px; }
+        .coach-card { background: var(--tg-theme-secondary-bg-color,#f5f5f5); border-radius: 12px; padding: 14px; margin-bottom: 12px; }
         .coach-header { display: flex; align-items: center; gap: 12px; margin-bottom: 8px; }
         .coach-photo { width: 52px; height: 52px; border-radius: 50%; object-fit: cover; flex-shrink: 0; }
-        .coach-emoji { width: 52px; height: 52px; border-radius: 50%; background: var(--tg-theme-button-color, #3390ec); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
+        .coach-emoji { width: 52px; height: 52px; border-radius: 50%; background: var(--tg-theme-button-color,#3390ec); display: flex; align-items: center; justify-content: center; font-size: 22px; flex-shrink: 0; }
         .coach-name { font-weight: 700; font-size: 15px; }
         .coach-tags { font-size: 12px; color: var(--tg-theme-hint-color); margin-top: 2px; }
         .coach-bio { font-size: 13px; line-height: 1.5; opacity: 0.85; }
-        .location-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; font-size: 14px; line-height: 1.7; }
-        .location-card a { color: var(--tg-theme-button-color, #3390ec); text-decoration: none; }
-
+        .location-card { background: var(--tg-theme-secondary-bg-color,#f5f5f5); border-radius: 12px; padding: 14px 16px; margin-bottom: 16px; font-size: 14px; line-height: 1.7; }
+        .location-card a { color: var(--tg-theme-button-color,#3390ec); text-decoration: none; }
+        /* Анкета */
+        .survey-group { margin-bottom: 14px; }
+        .survey-label { font-size: 14px; font-weight: 600; margin-bottom: 8px; color: var(--tg-theme-text-color,#000); }
+        .chip-row { display: flex; flex-wrap: wrap; gap: 8px; }
+        .chip { padding: 7px 14px; border-radius: 20px; border: 1.5px solid var(--tg-theme-hint-color,#ccc); background: transparent; color: var(--tg-theme-text-color,#000); font-size: 14px; cursor: pointer; transition: all .15s; }
+        .chip.selected { border-color: var(--tg-theme-button-color,#3390ec); background: var(--tg-theme-button-color,#3390ec); color: var(--tg-theme-button-text-color,#fff); }
         /* Результат */
         #result-screen { text-align: center; }
         .result-icon { font-size: 56px; margin: 20px 0 8px; }
-        .result-card { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 16px; margin: 12px 0; text-align: left; font-size: 14px; line-height: 1.7; }
-
+        .result-card { background: var(--tg-theme-secondary-bg-color,#f5f5f5); border-radius: 12px; padding: 16px; margin: 12px 0; text-align: left; font-size: 14px; line-height: 1.7; }
         /* Мои записи */
-        .booking-item { background: var(--tg-theme-secondary-bg-color, #f5f5f5); border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
+        .booking-item { background: var(--tg-theme-secondary-bg-color,#f5f5f5); border-radius: 12px; padding: 14px; margin-bottom: 10px; display: flex; justify-content: space-between; align-items: center; gap: 10px; }
         .booking-item .info { font-size: 14px; line-height: 1.5; flex: 1; }
         .booking-item .info b { font-size: 15px; display: block; }
         .booking-item .info small { color: var(--tg-theme-hint-color); }
@@ -78,28 +80,33 @@
 
     <!-- WELCOME -->
     <div id="welcome-screen">
+        <div class="lang-switcher">
+            <button class="lang-btn active" onclick="setLang('ru')">RU</button>
+            <button class="lang-btn" onclick="setLang('sr')">SR</button>
+        </div>
         <div class="welcome-hero">
             <h1>Tennis Pro Novi Sad 🎾</h1>
-            <p>Теннис — игра для удовольствия и развития в любом возрасте!</p>
+            <p id="w-tagline">Теннис — игра для удовольствия и развития в любом возрасте!</p>
         </div>
 
-        <div class="section-title">Прайс-лист</div>
+        <div class="section-title" id="w-price-title">Прайс-лист</div>
         <div class="price-card">
-            <div class="price-row"><span>Аренда корта (1 / 1.5 / 2 часа)</span><span class="price-val">1000 RSD / ч</span></div>
-            <div class="price-row"><span>Индивидуальное занятие с тренером</span><span class="price-val">4000 RSD / ч</span></div>
+            <div class="price-row"><span id="w-p1">Аренда корта (1 / 1.5 / 2 часа)</span><span class="price-val">1000 RSD / ч</span></div>
+            <div class="price-row"><span id="w-p2">Индивидуальное занятие с тренером</span><span class="price-val">4000 RSD / ч</span></div>
+            <div class="price-row"><span id="w-p3">Перетяжка струн</span><span class="price-val">3000 RSD</span></div>
         </div>
 
-        <div class="section-title">Наши тренеры</div>
+        <div class="section-title" id="w-coaches-title">Наши тренеры</div>
         <div class="coach-card">
             <div class="coach-header">
                 <img class="coach-photo" src="https://raw.githubusercontent.com/brave-katrin/tennis_bot/main/galina.jpg" alt="Галина" onerror="this.style.display='none';this.nextElementSibling.style.display='flex';">
                 <div class="coach-emoji" style="display:none">🎾</div>
                 <div>
                     <div class="coach-name">Галина</div>
-                    <div class="coach-tags">Стаж > 30 лет · US PTR Professional · KMC</div>
+                    <div class="coach-tags" id="w-g-tags">Стаж > 30 лет · US PTR Professional · KMC</div>
                 </div>
             </div>
-            <div class="coach-bio">Действующий игрок ITF. Начальное обучение и турнирная подготовка (индивидуально, сплит, группы). Приглашаю совершенствовать мастерство вместе!</div>
+            <div class="coach-bio" id="w-g-bio">Действующий игрок ITF. Начальное обучение и турнирная подготовка (индивидуально, сплит, группы). Приглашаю совершенствовать мастерство вместе!</div>
         </div>
         <div class="coach-card">
             <div class="coach-header">
@@ -107,21 +114,21 @@
                 <div class="coach-emoji" style="display:none">🎾</div>
                 <div>
                     <div class="coach-name">Наталия Прохорская</div>
-                    <div class="coach-tags">Стаж 27 лет · Мастер Спорта · Сертификат US PTR</div>
+                    <div class="coach-tags" id="w-n-tags">Стаж 27 лет · Мастер Спорта · Сертификат US PTR</div>
                 </div>
             </div>
-            <div class="coach-bio">Опыт работы в школе олимпийского резерва. Тренирует любителей и профессионалов. Подготовила множество кандидатов в мастера спорта.</div>
+            <div class="coach-bio" id="w-n-bio">Опыт работы в школе олимпийского резерва. Тренирует любителей и профессионалов. Подготовила множество кандидатов в мастера спорта.</div>
         </div>
 
-        <div class="section-title">Где тренироваться</div>
-        <div class="location-card">
+        <div class="section-title" id="w-loc-title">Где тренироваться</div>
+        <div class="location-card" id="w-loc-text">
             📍 <b>Meridiana</b> — Стојана Новаковића 2, Нови Сад<br><br>
-            🌳 <b>Через парк (короче):</b> войти в Нови парк, калитка рядом с детской площадкой — прямо на корты.<br><br>
-            🚗 <b>Со стороны Радујкова:</b> через ресторан до кортов 1–4, первый поворот направо — корты 5, 6, 7.<br><br>
-            <a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank">🗺 Открыть на карте</a>
+            🌳 <b id="w-park-label">Через парк (короче):</b> <span id="w-park-text">войти в Нови парк, калитка рядом с детской площадкой — прямо на корты.</span><br><br>
+            🚗 <b id="w-road-label">Со стороны Радујкова:</b> <span id="w-road-text">через ресторан до кортов 1–4, первый поворот направо — корты 5, 6, 7.</span><br><br>
+            <a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank" id="w-map-link">🗺 Открыть на карте</a>
         </div>
 
-        <button class="btn" onclick="goToBooking()">Перейти к бронированию →</button>
+        <button class="btn" id="w-book-btn" onclick="goToBooking()">Перейти к бронированию →</button>
     </div>
 
     <!-- АВТОРИЗАЦИЯ -->
@@ -129,75 +136,75 @@
         <h2>Tennis Pro 🎾</h2>
         <p class="subtitle" id="auth-subtitle">Загружаем профиль…</p>
         <div class="form-group hidden" id="phone-group">
-            <label>Телефон для связи</label>
+            <label id="lbl-phone">Телефон для связи</label>
             <input type="tel" id="user-phone" placeholder="+381 ...">
         </div>
-        <button class="btn" id="login-btn" onclick="login()">Войти</button>
-        <div id="loader" class="hidden">🔄 Загрузка расписания...</div>
+        <button class="btn" id="login-btn" onclick="login()" data-ru="Войти" data-sr="Prijavi se">Войти</button>
+        <div id="loader" class="hidden">🔄 <span id="lbl-loading">Загрузка расписания...</span></div>
     </div>
 
     <!-- МЕНЮ -->
     <div id="main-screen" class="hidden">
-        <h2>Главное меню</h2>
+        <h2 id="lbl-menu">Главное меню</h2>
         <div class="user-chip" id="user-chip"></div>
-        <button class="btn" onclick="showScreen('court-booking-screen')">📅 Аренда корта</button>
-        <button class="btn" onclick="showScreen('coach-screen')">💪 Тренировка с тренером</button>
-        <button class="btn btn-outline" onclick="openMyBookings()">📋 Мои записи</button>
+        <button class="btn" onclick="showScreen('court-booking-screen')" id="btn-court">📅 Аренда корта</button>
+        <button class="btn" onclick="showScreen('coach-screen')" id="btn-coach">💪 Тренировка с тренером</button>
+        <button class="btn btn-outline" onclick="openMyBookings()" id="btn-mybookings">📋 Мои записи</button>
         <button class="btn btn-outline hidden" id="admin-btn" onclick="showScreen('admin-screen')">⚙️ Панель Администратора</button>
     </div>
 
     <!-- АРЕНДА КОРТА -->
     <div id="court-booking-screen" class="hidden">
-        <h2>Аренда корта</h2>
+        <h2 id="lbl-court-title">Аренда корта</h2>
         <div class="form-group">
-            <label>Выберите корт:</label>
+            <label id="lbl-court-select">Выберите корт:</label>
             <select id="court-select" onchange="generateSlots('court')">
-                <option value="Корт 6 (Грунт)">Корт 6 (Грунт)</option>
-                <option value="Корт 7 (Грунт)">Корт 7 (Грунт)</option>
+                <option value="Корт 6 (Грунт)" id="opt-court6">Корт 6 (Грунт)</option>
+                <option value="Корт 7 (Грунт)" id="opt-court7">Корт 7 (Грунт)</option>
             </select>
         </div>
         <div class="form-group">
-            <label>Выберите дату:</label>
+            <label id="lbl-court-date">Выберите дату:</label>
             <div class="drum-date" id="court-drum"></div>
         </div>
         <div class="form-group hidden" id="court-slots-container">
-            <label>Доступное время:</label>
+            <label id="lbl-court-time">Доступное время:</label>
             <div class="time-grid" id="court-time-grid"></div>
         </div>
         <div class="form-group hidden" id="court-duration-container">
-            <label>Длительность:</label>
+            <label id="lbl-court-dur">Длительность:</label>
             <select id="court-duration">
-                <option value="1">1 час</option>
-                <option value="1.5">1.5 часа</option>
-                <option value="2">2 часа</option>
-                <option value="2.5">2.5 часа</option>
-                <option value="3">3 часа</option>
+                <option value="1" id="dur-1h">1 час</option>
+                <option value="1.5" id="dur-1h5">1.5 часа</option>
+                <option value="2" id="dur-2h">2 часа</option>
+                <option value="2.5" id="dur-2h5">2.5 часа</option>
+                <option value="3" id="dur-3h">3 часа</option>
             </select>
         </div>
-        <button class="btn" id="court-submit" onclick="submitData('court')">Забронировать</button>
-        <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
+        <button class="btn" id="court-submit" onclick="submitData('court')" data-ru="Забронировать" data-sr="Rezerviši">Забронировать</button>
+        <button class="btn btn-back" onclick="showScreen('main-screen')" id="btn-back-court" data-ru="Назад" data-sr="Nazad">Назад</button>
     </div>
 
     <!-- ТРЕНЕР -->
     <div id="coach-screen" class="hidden">
-        <h2>Тренировка с тренером</h2>
+        <h2 id="lbl-coach-title">Тренировка с тренером</h2>
         <div class="form-group">
-            <label>Выберите тренера:</label>
+            <label id="lbl-coach-select">Выберите тренера:</label>
             <select id="coach-select" onchange="generateSlots('coach')">
                 <option value="Галина">Галина (Корт 6)</option>
                 <option value="Наталья">Наталья (Корт 7)</option>
             </select>
         </div>
         <div class="form-group">
-            <label>Выберите дату:</label>
+            <label id="lbl-coach-date">Выберите дату:</label>
             <div class="drum-date" id="coach-drum"></div>
         </div>
         <div class="form-group hidden" id="coach-slots-container">
-            <label>Доступное время:</label>
+            <label id="lbl-coach-time">Доступное время:</label>
             <div class="time-grid" id="coach-time-grid"></div>
         </div>
         <div class="form-group hidden" id="coach-duration-container">
-            <label>Длительность:</label>
+            <label id="lbl-coach-dur">Длительность:</label>
             <select id="coach-duration">
                 <option value="1">1 час</option>
                 <option value="1.5">1.5 часа</option>
@@ -206,24 +213,57 @@
                 <option value="3">3 часа</option>
             </select>
         </div>
-        <button class="btn" id="coach-submit" onclick="submitData('coach')">Записаться</button>
-        <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
+
+        <!-- АНКЕТА — показывается после выбора времени -->
+        <div class="hidden" id="coach-survey">
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-level">Ваш уровень</div>
+                <div class="chip-row" id="chips-level">
+                    <button class="chip" data-group="level" data-ru="Начинающий" data-sr="Početnik">Начинающий</button>
+                    <button class="chip" data-group="level" data-ru="Средний" data-sr="Srednji">Средний</button>
+                    <button class="chip" data-group="level" data-ru="Продвинутый" data-sr="Napredan">Продвинутый</button>
+                </div>
+            </div>
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-racket">Ракетка</div>
+                <div class="chip-row" id="chips-racket">
+                    <button class="chip" data-group="racket" data-ru="Есть своя" data-sr="Imam svoju">Есть своя</button>
+                    <button class="chip" data-group="racket" data-ru="Нужна ракетка" data-sr="Treba mi">Нужна ракетка</button>
+                </div>
+            </div>
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-who">Кто тренируется</div>
+                <div class="chip-row" id="chips-who">
+                    <button class="chip" data-group="who" data-ru="Один" data-sr="Sam">Один</button>
+                    <button class="chip" data-group="who" data-ru="С партнёром" data-sr="Sa partnerom">С партнёром</button>
+                    <button class="chip" data-group="who" data-ru="Семья" data-sr="Porodica">Семья</button>
+                    <button class="chip" data-group="who" data-ru="Дети" data-sr="Deca">Дети</button>
+                </div>
+            </div>
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-notes">Когда хотите играть? Ещё что-то важное?</div>
+                <textarea id="coach-notes" rows="3" placeholder="Например: вечером в будни, желаемый тренер, травмы..."></textarea>
+            </div>
+        </div>
+
+        <button class="btn" id="coach-submit" onclick="submitData('coach')" data-ru="Записаться" data-sr="Prijavite se">Записаться</button>
+        <button class="btn btn-back" onclick="showScreen('main-screen')" data-ru="Назад" data-sr="Nazad">Назад</button>
     </div>
 
     <!-- МОИ ЗАПИСИ -->
     <div id="my-screen" class="hidden">
-        <h2>Мои записи</h2>
-        <p class="subtitle">Предстоящие брони. Отменить можно за 3+ часа до начала.</p>
+        <h2 id="lbl-my-title">Мои записи</h2>
+        <p class="subtitle" id="lbl-my-sub">Предстоящие брони. Отменить можно за 3+ часа до начала.</p>
         <div id="my-list"></div>
-        <button class="btn btn-back" onclick="showScreen('main-screen')">Назад</button>
+        <button class="btn btn-back" onclick="showScreen('main-screen')" data-ru="Назад" data-sr="Nazad">Назад</button>
     </div>
 
     <!-- УСПЕХ -->
     <div id="result-screen" class="hidden">
         <div class="result-icon">✅</div>
-        <h2>Готово!</h2>
+        <h2 id="lbl-result-title">Готово!</h2>
         <div class="result-card" id="result-text"></div>
-        <button class="btn" onclick="showScreen('main-screen')">В главное меню</button>
+        <button class="btn" onclick="showScreen('main-screen')" id="btn-result-menu" data-ru="В главное меню" data-sr="Glavni meni">В главное меню</button>
     </div>
 
     <!-- АДМИН -->
@@ -258,7 +298,6 @@
     const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzRlo2ArR5Z0RiRATPSFksJgdDiJQXA-Pu-UdLAfWvIAgYFy1n1LYXbTuHhWC7Cg1RJ_w/exec';
     const ADMIN_IDS = [132787250];
 
-    // Слоты 08:00 — 21:00 шаг 60 минут
     const baseTimeSlots = [];
     for (let h = 8; h <= 21; h++) baseTimeSlots.push(String(h).padStart(2,'0') + ':00');
 
@@ -266,34 +305,206 @@
     let userId    = tgUser ? String(tgUser.id) : "";
     let userName  = tgUser ? [tgUser.first_name, tgUser.last_name].filter(Boolean).join(' ') : "";
     let userPhone = "";
+    let userUsername = tgUser ? (tgUser.username || "") : "";
     let isAdmin   = false;
     let selectedTime = "";
     let globalBookings = [];
+    let currentLang = 'ru';
 
-    // ── Барабан даты ──────────────────────────────────────────────────
+    // ── Переводы ──────────────────────────────────────────────────────
+    const T = {
+        ru: {
+            tagline: 'Теннис — игра для удовольствия и развития в любом возрасте!',
+            priceTitle: 'Прайс-лист',
+            p1: 'Аренда корта (1 / 1.5 / 2 часа)',
+            p2: 'Индивидуальное занятие с тренером',
+            p3: 'Перетяжка струн',
+            coachesTitle: 'Наши тренеры',
+            gTags: 'Стаж > 30 лет · US PTR Professional · KMC',
+            gBio: 'Действующий игрок ITF. Начальное обучение и турнирная подготовка (индивидуально, сплит, группы). Приглашаю совершенствовать мастерство вместе!',
+            nTags: 'Стаж 27 лет · Мастер Спорта · Сертификат US PTR',
+            nBio: 'Опыт работы в школе олимпийского резерва. Тренирует любителей и профессионалов. Подготовила множество кандидатов в мастера спорта.',
+            locTitle: 'Где тренироваться',
+            parkLabel: 'Через парк (короче):',
+            parkText: 'войти в Нови парк, калитка рядом с детской площадкой — прямо на корты.',
+            roadLabel: 'Со стороны Радујкова:',
+            roadText: 'через ресторан до кортов 1–4, первый поворот направо — корты 5, 6, 7.',
+            mapLink: '🗺 Открыть на карте',
+            bookBtn: 'Перейти к бронированию →',
+            menuTitle: 'Главное меню',
+            btnCourt: '📅 Аренда корта',
+            btnCoach: '💪 Тренировка с тренером',
+            btnMy: '📋 Мои записи',
+            courtTitle: 'Аренда корта',
+            courtSelect: 'Выберите корт:',
+            courtDate: 'Выберите дату:',
+            courtTime: 'Доступное время:',
+            courtDur: 'Длительность:',
+            coachTitle: 'Тренировка с тренером',
+            coachSelect: 'Выберите тренера:',
+            coachDate: 'Выберите дату:',
+            coachTime: 'Доступное время:',
+            coachDur: 'Длительность:',
+            lblLevel: 'Ваш уровень',
+            lblRacket: 'Ракетка',
+            lblWho: 'Кто тренируется',
+            lblNotes: 'Когда хотите играть? Ещё что-то важное?',
+            notesPlaceholder: 'Например: вечером в будни, желаемый тренер, травмы...',
+            myTitle: 'Мои записи',
+            mySub: 'Предстоящие брони. Отменить можно за 3+ часа до начала.',
+            resultTitle: 'Готово!',
+            back: 'Назад',
+            book: 'Забронировать',
+            enroll: 'Записаться',
+            toMenu: 'В главное меню',
+            login: 'Войти',
+            loading: 'Загрузка расписания...',
+            phoneLabel: 'Телефон для связи',
+            dayLbl: 'День', monLbl: 'Месяц', yrLbl: 'Год',
+            free: 'Выбрать', past: 'Прошло', occupied: 'Занято', closed: 'Закрыто',
+            cancelBtn: 'Отменить',
+            emptyBookings: 'Пока нет предстоящих записей.',
+            confirmCancel: 'Отменить запись?',
+            cancelled: 'Запись отменена.',
+            cancelFail: 'Не удалось отменить. Попробуйте ещё раз.',
+            alertDateTime: 'Выберите дату и время!',
+            alertPast: 'Это время уже прошло, выберите другое.',
+            alertOccupied: 'Увы, это время только что заняли. Выберите другое.',
+            checking: 'Проверяем…', sending: 'Отправляем…',
+            saveFail: 'Не удалось сохранить запись. Проверьте интернет и попробуйте снова.',
+            withCoach: 'Тренировка с тренером ',
+            dur: { '1':'1 час','1.5':'1.5 часа','2':'2 часа','2.5':'2.5 часа','3':'3 часа' },
+        },
+        sr: {
+            tagline: 'Tenis — igra za zadovoljstvo i razvoj u svakom uzrastu!',
+            priceTitle: 'Cenovnik',
+            p1: 'Zakup terena (1 / 1.5 / 2 sata)',
+            p2: 'Individualni trening sa trenerom',
+            p3: 'Žičanje reketa',
+            coachesTitle: 'Naši treneri',
+            gTags: 'Iskustvo > 30 god · US PTR Professional · KMC',
+            gBio: 'Aktivni ITF igrač. Početna obuka i turnirska priprema (individualno, split, grupe). Pozivam vas da usavršimo majstorstvo zajedno!',
+            nTags: 'Iskustvo 27 god · Master sporta · Sertifikat US PTR',
+            nBio: 'Iskustvo u školi olimpijske rezerve. Trenira amatere i profesionalce. Pripremila brojne kandidate za master sporta.',
+            locTitle: 'Gde trenirati',
+            parkLabel: 'Kroz park (kraće):',
+            parkText: 'ući u Novi park, kapija pored dečijeg igrališta — direktno do terena.',
+            roadLabel: 'Sa strane Radujkova:',
+            roadText: 'kroz restoran do terena 1–4, prvi skretanje desno — tereni 5, 6, 7.',
+            mapLink: '🗺 Otvori na mapi',
+            bookBtn: 'Idi na rezervaciju →',
+            menuTitle: 'Glavni meni',
+            btnCourt: '📅 Zakup terena',
+            btnCoach: '💪 Trening sa trenerom',
+            btnMy: '📋 Moje rezervacije',
+            courtTitle: 'Zakup terena',
+            courtSelect: 'Izaberi teren:',
+            courtDate: 'Izaberi datum:',
+            courtTime: 'Dostupno vreme:',
+            courtDur: 'Trajanje:',
+            coachTitle: 'Trening sa trenerom',
+            coachSelect: 'Izaberi trenera:',
+            coachDate: 'Izaberi datum:',
+            coachTime: 'Dostupno vreme:',
+            coachDur: 'Trajanje:',
+            lblLevel: 'Vaš nivo',
+            lblRacket: 'Reket',
+            lblWho: 'Ko trenira',
+            lblNotes: 'Kada želite da igrate? Još nešto što treba da znamo?',
+            notesPlaceholder: 'Npr. radnim danima uveče, željeni trener, povrede...',
+            myTitle: 'Moje rezervacije',
+            mySub: 'Predstojeće rezervacije. Otkazati možete 3+ sata pre početka.',
+            resultTitle: 'Gotovo!',
+            back: 'Nazad',
+            book: 'Rezerviši',
+            enroll: 'Prijavite se',
+            toMenu: 'Glavni meni',
+            login: 'Prijavi se',
+            loading: 'Učitavanje rasporeda...',
+            phoneLabel: 'Telefon za kontakt',
+            dayLbl: 'Dan', monLbl: 'Mesec', yrLbl: 'Godina',
+            free: 'Izaberi', past: 'Prošlo', occupied: 'Zauzeto', closed: 'Zatvoreno',
+            cancelBtn: 'Otkaži',
+            emptyBookings: 'Nema predstojećih rezervacija.',
+            confirmCancel: 'Otkazati rezervaciju?',
+            cancelled: 'Rezervacija otkazana.',
+            cancelFail: 'Nije uspelo otkazivanje. Pokušajte ponovo.',
+            alertDateTime: 'Izaberite datum i vreme!',
+            alertPast: 'Ovo vreme je prošlo, izaberite drugo.',
+            alertOccupied: 'Nažalost, ovo vreme je upravo zauzeto. Izaberite drugo.',
+            checking: 'Proveravamo…', sending: 'Šaljemo…',
+            saveFail: 'Nije uspelo čuvanje rezervacije. Proverite internet i pokušajte ponovo.',
+            withCoach: 'Trening sa trenerom ',
+            dur: { '1':'1 sat','1.5':'1.5 sat','2':'2 sata','2.5':'2.5 sata','3':'3 sata' },
+        }
+    };
+
+    function t(key) { return T[currentLang][key] || T['ru'][key] || key; }
+
+    function setLang(lang) {
+        currentLang = lang;
+        document.querySelectorAll('.lang-btn').forEach(b => b.classList.remove('active'));
+        document.querySelector('.lang-btn[onclick="setLang(\'' + lang + '\')"]').classList.add('active');
+        applyTranslations();
+    }
+
+    function applyTranslations() {
+        const L = T[currentLang];
+        const set = (id, val) => { const el = document.getElementById(id); if (el) el.innerText = val; };
+        set('w-tagline', L.tagline);
+        set('w-price-title', L.priceTitle);
+        set('w-p1', L.p1); set('w-p2', L.p2); set('w-p3', L.p3);
+        set('w-coaches-title', L.coachesTitle);
+        set('w-g-tags', L.gTags); set('w-g-bio', L.gBio);
+        set('w-n-tags', L.nTags); set('w-n-bio', L.nBio);
+        set('w-loc-title', L.locTitle);
+        set('w-park-label', L.parkLabel); set('w-park-text', L.parkText);
+        set('w-road-label', L.roadLabel); set('w-road-text', L.roadText);
+        set('w-map-link', L.mapLink);
+        set('w-book-btn', L.bookBtn);
+        set('lbl-menu', L.menuTitle);
+        set('btn-court', L.btnCourt); set('btn-coach', L.btnCoach); set('btn-mybookings', L.btnMy);
+        set('lbl-court-title', L.courtTitle); set('lbl-court-select', L.courtSelect);
+        set('lbl-court-date', L.courtDate); set('lbl-court-time', L.courtTime); set('lbl-court-dur', L.courtDur);
+        set('lbl-coach-title', L.coachTitle); set('lbl-coach-select', L.coachSelect);
+        set('lbl-coach-date', L.coachDate); set('lbl-coach-time', L.coachTime); set('lbl-coach-dur', L.coachDur);
+        set('lbl-level', L.lblLevel); set('lbl-racket', L.lblRacket);
+        set('lbl-who', L.lblWho); set('lbl-notes', L.lblNotes);
+        set('lbl-my-title', L.myTitle); set('lbl-my-sub', L.mySub);
+        set('lbl-result-title', L.resultTitle);
+        set('lbl-phone', L.phoneLabel); set('lbl-loading', L.loading);
+        // chips
+        document.querySelectorAll('.chip').forEach(c => { const v = c.getAttribute('data-' + currentLang); if (v) c.innerText = v; });
+        // notes placeholder
+        const notes = document.getElementById('coach-notes'); if (notes) notes.placeholder = L.notesPlaceholder;
+        // drum labels
+        document.querySelectorAll('[data-drum-day]').forEach(el => el.innerText = L.dayLbl);
+        document.querySelectorAll('[data-drum-mon]').forEach(el => el.innerText = L.monLbl);
+        document.querySelectorAll('[data-drum-yr]').forEach(el => el.innerText = L.yrLbl);
+    }
+
+    // ── Барабан ───────────────────────────────────────────────────────
     function buildDrum(containerId, onChangeFn) {
         const wrap = document.getElementById(containerId);
         wrap.innerHTML = '';
         const today = new Date();
-
         const days = [], months = [], years = [];
         for (let d = 1; d <= 31; d++) days.push({ v: String(d).padStart(2,'0'), l: String(d).padStart(2,'0') });
-        const mNames = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
-        mNames.forEach((n,i) => months.push({ v: String(i+1).padStart(2,'0'), l: n }));
+        const mNamesRu = ['Янв','Фев','Мар','Апр','Май','Июн','Июл','Авг','Сен','Окт','Ноя','Дек'];
+        mNamesRu.forEach((n,i) => months.push({ v: String(i+1).padStart(2,'0'), l: n }));
         for (let y = today.getFullYear(); y <= today.getFullYear()+1; y++) years.push({ v: String(y), l: String(y) });
-
-        const dayS = makeSelect(days,   String(today.getDate()).padStart(2,'0'));
+        const dayS = makeSelect(days, String(today.getDate()).padStart(2,'0'));
         const monS = makeSelect(months, String(today.getMonth()+1).padStart(2,'0'));
-        const yrS  = makeSelect(years,  String(today.getFullYear()));
-
+        const yrS  = makeSelect(years, String(today.getFullYear()));
         const fire = () => onChangeFn && onChangeFn(getDrumValue(containerId));
         dayS.onchange = fire; monS.onchange = fire; yrS.onchange = fire;
-
-        [['День', dayS], ['Месяц', monS], ['Год', yrS]].forEach(([lbl, sel]) => {
+        const lbls = [['data-drum-day', T[currentLang].dayLbl, dayS],
+                      ['data-drum-mon', T[currentLang].monLbl, monS],
+                      ['data-drum-yr',  T[currentLang].yrLbl,  yrS]];
+        lbls.forEach(([attr, lbl, sel]) => {
             const col = document.createElement('div'); col.className = 'drum-col';
-            const lb  = document.createElement('label'); lb.innerText = lbl;
-            col.appendChild(lb); col.appendChild(sel);
-            wrap.appendChild(col);
+            const lb = document.createElement('label'); lb.innerText = lbl; lb.setAttribute(attr, '1');
+            col.appendChild(lb); col.appendChild(sel); wrap.appendChild(col);
         });
     }
 
@@ -314,16 +525,40 @@
         return sels[2].value + '-' + sels[1].value + '-' + sels[0].value;
     }
 
+    // ── Анкета ────────────────────────────────────────────────────────
+    function initChips() {
+        document.querySelectorAll('.chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                const group = this.getAttribute('data-group');
+                document.querySelectorAll('.chip[data-group="' + group + '"]').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+    }
+
+    function getSurveyData() {
+        const getSelected = (group) => {
+            const el = document.querySelector('.chip[data-group="' + group + '"].selected');
+            return el ? el.getAttribute('data-ru') : '';
+        };
+        return {
+            level:  getSelected('level'),
+            racket: getSelected('racket'),
+            who:    getSelected('who'),
+            notes:  (document.getElementById('coach-notes') || {}).value || ''
+        };
+    }
+
     window.onload = function() {
         buildDrum('court-drum', () => generateSlots('court'));
         buildDrum('coach-drum', () => generateSlots('coach'));
         buildDrum('admin-drum', () => generateAdminSlots());
-
+        initChips();
         const sub = document.getElementById('auth-subtitle');
         if (tgUser) {
-            sub.innerText = 'Здравствуйте, ' + (userName || 'игрок') + '! Нажмите «Войти», чтобы продолжить.';
+            sub.innerText = (currentLang === 'sr' ? 'Dobrodošli, ' : 'Здравствуйте, ') + (userName || '') + '!';
         } else {
-            sub.innerHTML = 'Открыто вне Telegram (режим теста).<br>Введите телефон, чтобы продолжить. <small>(7777777777 — вход в админку)</small>';
+            sub.innerHTML = 'Открыто вне Telegram (режим теста).<br><small>7777777777 — вход в админку</small>';
             document.getElementById('phone-group').classList.remove('hidden');
         }
     };
@@ -336,9 +571,8 @@
     async function login() {
         userPhone = (document.getElementById('user-phone').value || "").trim();
         if (!tgUser) {
-            if (userPhone.length < 5) return tg.showAlert("Введите корректный номер");
-            userId   = "guest_" + userPhone;
-            userName = userName || ("Гость " + userPhone);
+            if (userPhone.length < 5) return tg.showAlert(t('phoneLabel'));
+            userId = "guest_" + userPhone; userName = userName || ("Гость " + userPhone);
         }
         isAdmin = ADMIN_IDS.includes(Number(userId)) || userPhone === "7777777777";
         document.getElementById('login-btn').classList.add('hidden');
@@ -348,11 +582,11 @@
             if (!Array.isArray(globalBookings)) globalBookings = [];
         } catch(e) {
             globalBookings = [];
-            tg.showAlert("Не удалось загрузить расписание. Проверьте соединение и попробуйте ещё раз.");
+            tg.showAlert(t('saveFail'));
         }
         document.getElementById('loader').classList.add('hidden');
         document.getElementById('login-btn').classList.remove('hidden');
-        document.getElementById('user-chip').innerText = (userName || "Гость") + (userPhone ? " · " + userPhone : "");
+        document.getElementById('user-chip').innerText = (userName || "") + (userPhone ? " · " + userPhone : "");
         if (isAdmin) document.getElementById('admin-btn').classList.remove('hidden');
         showScreen('main-screen');
     }
@@ -362,7 +596,6 @@
         document.getElementById(id).classList.remove('hidden');
     }
 
-    // ── Нормализация ──────────────────────────────────────────────────
     function normalizeDate(d) {
         if (!d) return '';
         if (typeof d === 'string' && d.match(/^\d{4}-\d{2}-\d{2}$/)) return d;
@@ -380,7 +613,6 @@
         const [y,m,day] = s.split('-'); return day + '.' + m + '.' + y;
     }
 
-    // ── Связка корт/тренер ────────────────────────────────────────────
     function linkedTargets(target) {
         const map = {
             'Корт 6 (Грунт)': ['Корт 6 (Грунт)', 'Галина'],
@@ -403,49 +635,44 @@
     function isPastSlot(date, time) {
         const today = new Date().toISOString().split('T')[0];
         if (date !== today) return false;
-        const now = new Date();
-        const [h,m] = time.split(':').map(Number);
-        const slot = new Date(); slot.setHours(h,m,0,0);
-        return slot <= now;
+        const now = new Date(); const [h,m] = time.split(':').map(Number);
+        const slot = new Date(); slot.setHours(h,m,0,0); return slot <= now;
     }
 
-    // ── Слоты ─────────────────────────────────────────────────────────
     function generateSlots(type) {
-        const drumId  = type === 'court' ? 'court-drum'   : 'coach-drum';
-        const targId  = type === 'court' ? 'court-select' : 'coach-select';
-        const contId  = type === 'court' ? 'court-slots-container'   : 'coach-slots-container';
-        const gridId  = type === 'court' ? 'court-time-grid'         : 'coach-time-grid';
-        const durId   = type === 'court' ? 'court-duration-container': 'coach-duration-container';
-
+        const drumId = type === 'court' ? 'court-drum' : 'coach-drum';
+        const targId = type === 'court' ? 'court-select' : 'coach-select';
+        const contId = type === 'court' ? 'court-slots-container' : 'coach-slots-container';
+        const gridId = type === 'court' ? 'court-time-grid' : 'coach-time-grid';
+        const durId  = type === 'court' ? 'court-duration-container' : 'coach-duration-container';
         const date   = getDrumValue(drumId);
         const target = document.getElementById(targId).value;
         if (!date) return document.getElementById(contId).classList.add('hidden');
-
         document.getElementById(contId).classList.remove('hidden');
         document.getElementById(durId).classList.add('hidden');
+        if (type === 'coach') document.getElementById('coach-survey').classList.add('hidden');
         selectedTime = "";
-
-        const grid = document.getElementById(gridId);
-        grid.innerHTML = '';
+        const grid = document.getElementById(gridId); grid.innerHTML = '';
         baseTimeSlots.forEach(time => {
             const btn = document.createElement('div');
             const slot = getOccupyingBooking(globalBookings, date, time, target);
             if (isPastSlot(date, time)) {
                 btn.className = 'time-slot past';
-                btn.innerHTML = time + '<span>Прошло</span>';
+                btn.innerHTML = time + '<span>' + t('past') + '</span>';
             } else if (slot) {
-                let reason = slot.isUser ? 'Занято' : 'Закрыто';
-                if (slot.target !== target) reason = 'Занято (' + slot.target + ')';
+                let reason = slot.isUser ? t('occupied') : t('closed');
+                if (slot.target !== target) reason = t('occupied') + ' (' + slot.target + ')';
                 btn.className = 'time-slot ' + (slot.isUser ? 'occupied' : 'admin-block');
                 btn.innerHTML = time + '<span>' + reason + '</span>';
             } else {
                 btn.className = 'time-slot';
-                btn.innerHTML = time + '<span>Выбрать</span>';
+                btn.innerHTML = time + '<span>' + t('free') + '</span>';
                 btn.onclick = () => {
                     document.querySelectorAll('#' + gridId + ' .time-slot').forEach(el => el.classList.remove('selected'));
                     btn.classList.add('selected');
                     selectedTime = time;
                     document.getElementById(durId).classList.remove('hidden');
+                    if (type === 'coach') document.getElementById('coach-survey').classList.remove('hidden');
                 };
             }
             grid.appendChild(btn);
@@ -453,25 +680,23 @@
     }
 
     function generateAdminSlots() {
-        const date   = getDrumValue('admin-drum');
+        const date = getDrumValue('admin-drum');
         const target = document.getElementById('admin-target').value;
-        const grid   = document.getElementById('admin-time-grid');
-        grid.innerHTML = '';
-        if (!date) return;
+        const grid = document.getElementById('admin-time-grid');
+        grid.innerHTML = ''; if (!date) return;
         baseTimeSlots.forEach(time => {
-            const btn  = document.createElement('div');
+            const btn = document.createElement('div');
             const slot = getOccupyingBooking(globalBookings, date, time, target);
             if (slot) {
                 btn.className = 'time-slot ' + (slot.isUser ? 'occupied' : 'admin-block');
                 btn.innerHTML = time + '<span>' + (slot.target !== target ? 'Занято (' + slot.target + ')' : 'Занято') + '</span>';
-                btn.onclick = () => tg.showAlert('Чтобы снять бронь или блокировку, удалите строку в Google Таблице.');
+                btn.onclick = () => tg.showAlert('Чтобы снять бронь, удалите строку в Google Таблице.');
             } else {
                 btn.className = 'time-slot';
                 btn.innerHTML = time + '<span>Свободно</span>';
                 btn.onclick = () => {
                     const bd = { date, time, target, isUser: false, phone: "Админ", tgId: userId, name: userName };
-                    globalBookings.push(bd);
-                    generateAdminSlots();
+                    globalBookings.push(bd); generateAdminSlots();
                     sendBooking(bd).catch(e => console.log(e));
                 };
             }
@@ -488,95 +713,87 @@
     }
 
     async function submitData(type) {
-        const drumId  = type === 'court' ? 'court-drum'    : 'coach-drum';
-        const targId  = type === 'court' ? 'court-select'  : 'coach-select';
-        const btnId   = type === 'court' ? 'court-submit'  : 'coach-submit';
-        const durId   = type === 'court' ? 'court-duration': 'coach-duration';
-
+        const drumId = type === 'court' ? 'court-drum' : 'coach-drum';
+        const targId = type === 'court' ? 'court-select' : 'coach-select';
+        const btnId  = type === 'court' ? 'court-submit' : 'coach-submit';
+        const durId  = type === 'court' ? 'court-duration' : 'coach-duration';
         const date     = getDrumValue(drumId);
         const target   = document.getElementById(targId).value;
         const duration = parseFloat(document.getElementById(durId).value);
         const isCoach  = (type === 'coach');
-
-        if (!date || !selectedTime) return tg.showAlert("Выберите дату и время!");
-        if (isPastSlot(date, selectedTime)) return tg.showAlert("Это время уже прошло, выберите другое.");
-
+        if (!date || !selectedTime) return tg.showAlert(t('alertDateTime'));
+        if (isPastSlot(date, selectedTime)) return tg.showAlert(t('alertPast'));
         const btn = document.getElementById(btnId);
         const origText = btn.innerText;
-        btn.disabled = true; btn.innerText = "Проверяем…";
-
-        const bookingData = { date, time: selectedTime, target, isUser: true, phone: userPhone, tgId: userId, name: userName };
-
+        btn.disabled = true; btn.innerText = t('checking');
+        const survey = isCoach ? getSurveyData() : null;
+        const bookingData = {
+            date, time: selectedTime, target, isUser: true,
+            phone: userPhone, tgId: userId, name: userName, username: userUsername,
+            level: survey ? survey.level : '',
+            racket: survey ? survey.racket : '',
+            who: survey ? survey.who : '',
+            notes: survey ? survey.notes : ''
+        };
         try {
             try { const f = await (await fetch(SCRIPT_URL)).json(); if (Array.isArray(f)) globalBookings = f; } catch(_){}
-
             if (getOccupyingBooking(globalBookings, date, selectedTime, target)) {
-                tg.showAlert("Увы, это время только что заняли. Выберите другое.");
-                generateSlots(type); return;
+                tg.showAlert(t('alertOccupied')); generateSlots(type); return;
             }
-
-            btn.innerText = "Отправляем…";
+            btn.innerText = t('sending');
             const res = await sendBooking(bookingData);
             let ok = true;
             try { const j = await res.json(); if (j && j.ok === false) ok = false; } catch(_){}
-
             if (!ok) {
-                tg.showAlert("Это время только что заняли. Выберите другое.");
+                tg.showAlert(t('alertOccupied'));
                 try { globalBookings = await (await fetch(SCRIPT_URL)).json(); } catch(_){}
                 generateSlots(type); return;
             }
-
             globalBookings.push(bookingData);
-            const durText = duration===1?'1 час':duration===1.5?'1.5 часа':duration===2?'2 часа':duration===2.5?'2.5 часа':'3 часа';
-            const label   = isCoach ? ('Тренировка с тренером ' + target) : target;
-
+            const durText = t('dur')[String(duration)] || (duration + ' ч');
+            const label = isCoach ? (t('withCoach') + target) : target;
             document.getElementById('result-text').innerHTML =
                 '<b>' + label + '</b><br>📅 ' + formatDate(date) + '<br>🕐 ' + selectedTime + ' · ' + durText +
                 (userName ? '<br>👤 ' + userName : '') +
                 '<br><br>📍 <b>Meridiana</b> — Стојана Новаковића 2, Нови Сад<br><br>' +
-                '🌳 <b>Через парк:</b> калитка рядом с детской площадкой в Нови парке.<br>' +
-                '🚗 <b>Со стороны Радујкова:</b> через ресторан, первый поворот направо — корты 5, 6, 7.<br><br>' +
-                '<a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank" style="color:var(--tg-theme-button-color,#3390ec)">🗺 Открыть на карте</a>';
-
+                '🌳 <b>' + t('parkLabel') + '</b> ' + t('parkText') + '<br>' +
+                '🚗 <b>' + t('roadLabel') + '</b> ' + t('roadText') + '<br><br>' +
+                '<a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank" style="color:var(--tg-theme-button-color,#3390ec)">' + t('mapLink') + '</a>';
             showScreen('result-screen');
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             selectedTime = "";
         } catch(e) {
-            tg.showAlert("Не удалось сохранить запись. Проверьте интернет и попробуйте снова.");
+            tg.showAlert(t('saveFail'));
         } finally {
             btn.disabled = false; btn.innerText = origText;
         }
     }
 
-    // ── Мои записи ────────────────────────────────────────────────────
     function openMyBookings() {
-        const list  = document.getElementById('my-list');
+        const list = document.getElementById('my-list');
         const today = new Date().toISOString().split('T')[0];
-        const now   = new Date();
-
+        const now = new Date();
         const mine = globalBookings.filter(b => {
             const d = normalizeDate(b.date);
             return b.isUser &&
                 ((b.tgId && String(b.tgId) === userId) || (userPhone && b.phone === userPhone)) &&
                 d >= today;
         }).sort((a,b) => (normalizeDate(a.date)+normalizeTime(a.time)).localeCompare(normalizeDate(b.date)+normalizeTime(b.time)));
-
         if (mine.length === 0) {
-            list.innerHTML = '<div class="empty-note">Пока нет предстоящих записей.</div>';
+            list.innerHTML = '<div class="empty-note">' + t('emptyBookings') + '</div>';
         } else {
             list.innerHTML = mine.map(b => {
                 const nd = normalizeDate(b.date), nt = normalizeTime(b.time);
                 const [yr,mo,dy] = nd.split('-').map(Number);
-                const [hh,mm]    = nt.split(':').map(Number);
+                const [hh,mm] = nt.split(':').map(Number);
                 const diff = (new Date(yr,mo-1,dy,hh,mm) - now) / (1000*60*60);
-                const canCancel  = diff > 3;
-                const lbl = (b.target==='Галина'||b.target==='Наталья') ? 'Тренировка с тренером ' + b.target : b.target;
-                const dStr = nd.replace(/'/g,"").replace(/"/g,"");
-                const tStr = nt.replace(/'/g,"").replace(/"/g,"");
+                const canCancel = diff > 3;
+                const lbl = (b.target==='Галина'||b.target==='Наталья') ? t('withCoach') + b.target : b.target;
+                const dStr = nd.replace(/'/g,""); const tStr = nt.replace(/'/g,"");
                 const tgStr = b.target.replace(/'/g,"\\'");
                 return '<div class="booking-item">' +
                     '<div class="info"><b>' + lbl + '</b><small>' + formatDate(nd) + ' · ' + nt + '</small></div>' +
-                    (canCancel ? '<button class="cancel-btn" onclick="cancelBooking(\'' + dStr + '\',\'' + tStr + '\',\'' + tgStr + '\')">Отменить</button>' : '') +
+                    (canCancel ? '<button class="cancel-btn" onclick="cancelBooking(\'' + dStr + '\',\'' + tStr + '\',\'' + tgStr + '\')">' + t('cancelBtn') + '</button>' : '') +
                     '</div>';
             }).join('');
         }
@@ -584,17 +801,14 @@
     }
 
     async function cancelBooking(date, time, target) {
-        if (!confirm('Отменить запись?\n' + target + ' · ' + formatDate(date) + ' в ' + time)) return;
+        if (!confirm(t('confirmCancel') + '\n' + target + ' · ' + formatDate(date) + ' в ' + time)) return;
         try {
             await sendBooking({ action: 'cancel', date, time, target, tgId: userId });
             globalBookings = globalBookings.filter(b =>
                 !(normalizeDate(b.date)===date && normalizeTime(b.time)===time && b.target===target)
             );
-            tg.showAlert("Запись отменена.");
-            openMyBookings();
-        } catch(e) {
-            tg.showAlert("Не удалось отменить. Попробуйте ещё раз.");
-        }
+            tg.showAlert(t('cancelled')); openMyBookings();
+        } catch(e) { tg.showAlert(t('cancelFail')); }
     }
 </script>
 </body>
