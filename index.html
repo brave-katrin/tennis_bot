@@ -639,6 +639,30 @@
         const slot = new Date(); slot.setHours(h,m,0,0); return slot <= now;
     }
 
+    // selectedSlots: массив выбранных времён для текущего типа
+    let selectedSlots = [];
+    const MAX_SLOTS = { court: 3, coach: 2 };
+
+    // Проверяем занят ли слот с учётом длительности существующих броней
+    function isSlotOccupied(bookings, date, time, target) {
+        const conflicts = linkedTargets(target);
+        return bookings.some(b => {
+            if (conflicts.indexOf(b.target) === -1) return false;
+            const bSlots = b.slots || 1;
+            for (let i = 0; i < bSlots; i++) {
+                const bt = addHours(normalizeTime(b.time), i);
+                if (normalizeDate(b.date) === normalizeDate(date) && bt === time) return true;
+            }
+            return false;
+        });
+    }
+
+    function addHours(timeStr, n) {
+        if (!timeStr || !timeStr.includes(':')) return timeStr;
+        const [h, m] = timeStr.split(':').map(Number);
+        return String(h + n).padStart(2, '0') + ':' + String(m).padStart(2, '0');
+    }
+
     function generateSlots(type) {
         const drumId = type === 'court' ? 'court-drum' : 'coach-drum';
         const targId = type === 'court' ? 'court-select' : 'coach-select';
@@ -651,32 +675,79 @@
         document.getElementById(contId).classList.remove('hidden');
         document.getElementById(durId).classList.add('hidden');
         if (type === 'coach') document.getElementById('coach-survey').classList.add('hidden');
+        selectedSlots = [];
         selectedTime = "";
         const grid = document.getElementById(gridId); grid.innerHTML = '';
+        const maxSlots = MAX_SLOTS[type] || 3;
+
         baseTimeSlots.forEach(time => {
             const btn = document.createElement('div');
-            const slot = getOccupyingBooking(globalBookings, date, time, target);
+            const occupied = isSlotOccupied(globalBookings, date, time, target);
             if (isPastSlot(date, time)) {
                 btn.className = 'time-slot past';
                 btn.innerHTML = time + '<span>' + t('past') + '</span>';
-            } else if (slot) {
-                let reason = slot.isUser ? t('occupied') : t('closed');
-                if (slot.target !== target) reason = t('occupied') + ' (' + slot.target + ')';
-                btn.className = 'time-slot ' + (slot.isUser ? 'occupied' : 'admin-block');
-                btn.innerHTML = time + '<span>' + reason + '</span>';
+            } else if (occupied) {
+                // Обычный пользователь видит просто "Занято", без деталей
+                btn.className = 'time-slot occupied';
+                btn.innerHTML = time + '<span>' + t('occupied') + '</span>';
             } else {
                 btn.className = 'time-slot';
                 btn.innerHTML = time + '<span>' + t('free') + '</span>';
-                btn.onclick = () => {
-                    document.querySelectorAll('#' + gridId + ' .time-slot').forEach(el => el.classList.remove('selected'));
-                    btn.classList.add('selected');
-                    selectedTime = time;
-                    document.getElementById(durId).classList.remove('hidden');
-                    if (type === 'coach') document.getElementById('coach-survey').classList.remove('hidden');
-                };
+                btn.onclick = () => toggleSlot(btn, time, type, gridId, durId, date, target, maxSlots);
             }
             grid.appendChild(btn);
         });
+    }
+
+    function toggleSlot(btn, time, type, gridId, durId, date, target, maxSlots) {
+        const idx = selectedSlots.indexOf(time);
+        if (idx !== -1) {
+            // Снимаем выбор — только если это последний выбранный слот
+            if (time === selectedSlots[selectedSlots.length - 1]) {
+                selectedSlots.pop();
+                btn.classList.remove('selected');
+                btn.querySelector('span').innerText = t('free');
+            }
+        } else {
+            // Добавляем слот — только если он следует за последним выбранным
+            if (selectedSlots.length >= maxSlots) {
+                tg.showAlert(type === 'coach'
+                    ? (currentLang === 'sr' ? 'Maksimalno ' + maxSlots + ' sata treninga.' : 'Максимум ' + maxSlots + ' часа тренировки.')
+                    : (currentLang === 'sr' ? 'Maksimalno ' + maxSlots + ' sata za teren.' : 'Максимум ' + maxSlots + ' часа аренды корта.'));
+                return;
+            }
+            if (selectedSlots.length > 0) {
+                const lastTime = selectedSlots[selectedSlots.length - 1];
+                const expectedNext = addHours(lastTime, 1);
+                if (time !== expectedNext) {
+                    tg.showAlert(currentLang === 'sr'
+                        ? 'Izaberite uzastopne termine.'
+                        : 'Выбирайте слоты подряд.');
+                    return;
+                }
+                // Проверяем что промежуточные слоты у связанного ресурса тоже свободны
+                if (isSlotOccupied(globalBookings, date, time, target)) {
+                    tg.showAlert(t('alertOccupied')); return;
+                }
+            }
+            selectedSlots.push(time);
+            btn.classList.add('selected');
+            btn.querySelector('span').innerText = selectedSlots.length === 1 ? '1 ч' : selectedSlots.length + ' ч';
+        }
+
+        selectedTime = selectedSlots.length > 0 ? selectedSlots[0] : "";
+        if (selectedSlots.length > 0) {
+            document.getElementById(durId).classList.remove('hidden');
+            // Показываем длительность как текст
+            const durSel = document.getElementById(type === 'court' ? 'court-duration' : 'coach-duration');
+            if (durSel) durSel.value = String(selectedSlots.length);
+            if (type === 'coach' && selectedSlots.length > 0) {
+                document.getElementById('coach-survey').classList.remove('hidden');
+            }
+        } else {
+            document.getElementById(durId).classList.add('hidden');
+            if (type === 'coach') document.getElementById('coach-survey').classList.add('hidden');
+        }
     }
 
     function generateAdminSlots() {
@@ -686,16 +757,28 @@
         grid.innerHTML = ''; if (!date) return;
         baseTimeSlots.forEach(time => {
             const btn = document.createElement('div');
-            const slot = getOccupyingBooking(globalBookings, date, time, target);
-            if (slot) {
-                btn.className = 'time-slot ' + (slot.isUser ? 'occupied' : 'admin-block');
-                btn.innerHTML = time + '<span>' + (slot.target !== target ? 'Занято (' + slot.target + ')' : 'Занято') + '</span>';
-                btn.onclick = () => tg.showAlert('Чтобы снять бронь, удалите строку в Google Таблице.');
+            const occupied = isSlotOccupied(globalBookings, date, time, target);
+            // Находим оригинальную бронь для показа деталей (только для админа)
+            const origBooking = globalBookings.find(b => {
+                const conflicts = linkedTargets(target);
+                if (conflicts.indexOf(b.target) === -1) return false;
+                const bSlots = b.slots || 1;
+                for (let i = 0; i < bSlots; i++) {
+                    if (normalizeDate(b.date) === normalizeDate(date) && addHours(normalizeTime(b.time), i) === time) return true;
+                }
+                return false;
+            });
+            if (occupied && origBooking) {
+                const isUserBooking = origBooking.isUser;
+                const detail = origBooking.name ? origBooking.name : (origBooking.target !== target ? origBooking.target : '');
+                btn.className = 'time-slot ' + (isUserBooking ? 'occupied' : 'admin-block');
+                btn.innerHTML = time + '<span>' + (detail ? detail : (isUserBooking ? 'Клиент' : 'Закрыто')) + '</span>';
+                btn.onclick = () => tg.showAlert('Бронь: ' + (origBooking.name || '—') + '\nТелефон: ' + (origBooking.phone || '—') + '\nВремя: ' + origBooking.time + (origBooking.slots > 1 ? ' (' + origBooking.slots + ' ч)' : '') + '\n\nДля отмены удалите строку в Google Таблице.');
             } else {
                 btn.className = 'time-slot';
                 btn.innerHTML = time + '<span>Свободно</span>';
                 btn.onclick = () => {
-                    const bd = { date, time, target, isUser: false, phone: "Админ", tgId: userId, name: userName };
+                    const bd = { date, time, target, isUser: false, slots: 1, phone: "Админ", tgId: userId, name: userName };
                     globalBookings.push(bd); generateAdminSlots();
                     sendBooking(bd).catch(e => console.log(e));
                 };
@@ -719,7 +802,8 @@
         const durId  = type === 'court' ? 'court-duration' : 'coach-duration';
         const date     = getDrumValue(drumId);
         const target   = document.getElementById(targId).value;
-        const duration = parseFloat(document.getElementById(durId).value);
+        const slots    = selectedSlots.length || 1;
+        const duration = slots;
         const isCoach  = (type === 'coach');
         if (!date || !selectedTime) return tg.showAlert(t('alertDateTime'));
         if (isPastSlot(date, selectedTime)) return tg.showAlert(t('alertPast'));
@@ -730,6 +814,7 @@
         const bookingData = {
             date, time: selectedTime, target, isUser: true,
             phone: userPhone, tgId: userId, name: userName, username: userUsername,
+            slots: slots,
             level: survey ? survey.level : '',
             racket: survey ? survey.racket : '',
             who: survey ? survey.who : '',
@@ -750,7 +835,8 @@
                 generateSlots(type); return;
             }
             globalBookings.push(bookingData);
-            const durText = t('dur')[String(duration)] || (duration + ' ч');
+            const slotsCount = slots || 1;
+            const durText = t('dur')[String(slotsCount)] || (slotsCount + ' ч');
             const label = isCoach ? (t('withCoach') + target) : target;
             document.getElementById('result-text').innerHTML =
                 '<b>' + label + '</b><br>📅 ' + formatDate(date) + '<br>🕐 ' + selectedTime + ' · ' + durText +
@@ -762,6 +848,7 @@
             showScreen('result-screen');
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
             selectedTime = "";
+            selectedSlots = [];
         } catch(e) {
             tg.showAlert(t('saveFail'));
         } finally {
