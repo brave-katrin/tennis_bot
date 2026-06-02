@@ -149,6 +149,7 @@
         <div class="user-chip" id="user-chip"></div>
         <button class="btn" onclick="showScreen('court-booking-screen')" id="btn-court">📅 Аренда корта</button>
         <button class="btn" onclick="showScreen('coach-screen')" id="btn-coach">💪 Тренировка с тренером</button>
+        <button class="btn btn-outline" onclick="showScreen('stringing-screen')" id="btn-stringing">🎯 Перетяжка струн</button>
         <button class="btn btn-outline" onclick="openMyBookings()" id="btn-mybookings">📋 Мои записи</button>
         <button class="btn btn-outline hidden" id="admin-btn" onclick="showScreen('admin-screen')">⚙️ Панель Администратора</button>
     </div>
@@ -247,6 +248,105 @@
         </div>
 
         <button class="btn" id="coach-submit" onclick="submitData('coach')" data-ru="Записаться" data-sr="Prijavite se">Записаться</button>
+        <button class="btn btn-back" onclick="showScreen('main-screen')" data-ru="Назад" data-sr="Nazad">Назад</button>
+    </div>
+
+    <!-- Шаблон полной анкеты тренера (скрытый, используется JS) -->
+    <template id="full-survey-template">
+        <div class="survey-group">
+            <div class="survey-label" id="lbl-level">Ваш уровень</div>
+            <div class="chip-row">
+                <button class="chip" data-group="level" data-ru="Начинающий" data-sr="Početnik">Начинающий</button>
+                <button class="chip" data-group="level" data-ru="Средний" data-sr="Srednji">Средний</button>
+                <button class="chip" data-group="level" data-ru="Продвинутый" data-sr="Napredan">Продвинутый</button>
+            </div>
+        </div>
+        <div class="survey-group">
+            <div class="survey-label">Ракетка</div>
+            <div class="chip-row">
+                <button class="chip" data-group="racket" data-ru="Есть своя" data-sr="Imam svoju">Есть своя</button>
+                <button class="chip" data-group="racket" data-ru="Нужна ракетка" data-sr="Treba mi">Нужна ракетка</button>
+            </div>
+        </div>
+        <div class="survey-group">
+            <div class="survey-label">Кто тренируется</div>
+            <div class="chip-row">
+                <button class="chip" data-group="who" data-ru="Один" data-sr="Sam">Один</button>
+                <button class="chip" data-group="who" data-ru="С партнёром" data-sr="Sa partnerom">С партнёром</button>
+                <button class="chip" data-group="who" data-ru="Семья" data-sr="Porodica">Семья</button>
+                <button class="chip" data-group="who" data-ru="Дети" data-sr="Deca">Дети</button>
+            </div>
+        </div>
+        <div class="survey-group">
+            <div class="survey-label">Когда хотите играть? Ещё что-то важное?</div>
+            <textarea id="coach-notes" rows="3" placeholder="Например: вечером в будни, желаемый тренер, травмы..."></textarea>
+        </div>
+    </template>
+
+    <!-- ПЕРЕТЯЖКА СТРУН -->
+    <div id="stringing-screen" class="hidden">
+        <h2 id="lbl-string-title">🎯 Перетяжка струн</h2>
+        <p class="subtitle" id="lbl-string-sub">Стоимость: 3000 RSD</p>
+
+        <!-- Вопрос: первый раз? -->
+        <div id="string-trust-block">
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-string-trust">Как хотите оформить заказ?</div>
+                <div class="chip-row">
+                    <button class="chip" id="chip-trust" onclick="selectStringMode('trust')" data-ru="Доверюсь мастеру" data-sr="Prepuštam majstoru">Доверюсь мастеру</button>
+                    <button class="chip" id="chip-detail" onclick="selectStringMode('detail')" data-ru="Заполню подробно" data-sr="Popuniću detaljno">Заполню подробно</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Краткая форма (доверюсь мастеру) -->
+        <div id="string-simple" class="hidden">
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-string-racket-s">Ваша ракетка (модель)</div>
+                <textarea id="string-racket-simple" rows="2" placeholder="Например: Wilson Blade 98, Head Speed Pro..."></textarea>
+            </div>
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-string-contact">Контактный телефон для связи</div>
+                <input type="tel" id="string-phone" placeholder="+381 ...">
+            </div>
+        </div>
+
+        <!-- Подробная форма -->
+        <div id="string-detail" class="hidden">
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-string-racket-d">Ваша ракетка (модель)</div>
+                <textarea id="string-racket-detail" rows="2" placeholder="Например: Wilson Blade 98, Head Speed Pro..."></textarea>
+            </div>
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-string-tension">Натяжение струн</div>
+                <input type="text" id="string-tension" placeholder="Например: 23 кг / 50 lbs (или оставьте пустым)">
+                <div style="font-size:12px;color:var(--tg-theme-hint-color);margin-top:4px" id="lbl-string-tension-hint">Если не знаете — мастер подберёт исходя из вашей ракетки и уровня игры</div>
+            </div>
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-string-type">Тип струн</div>
+                <div class="chip-row">
+                    <button class="chip" data-group="string-type" data-ru="Мультиволокно (мягкие)" data-sr="Multifilament (meke)">Мультиволокно (мягкие)</button>
+                    <button class="chip" data-group="string-type" data-ru="Полиэстер (жёсткие)" data-sr="Poliester (tvrde)">Полиэстер (жёсткие)</button>
+                    <button class="chip" data-group="string-type" data-ru="Натуральные" data-sr="Prirodne">Натуральные</button>
+                    <button class="chip" data-group="string-type" data-ru="Не знаю" data-sr="Ne znam">Не знаю</button>
+                </div>
+            </div>
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-string-style">Стиль игры</div>
+                <div class="chip-row">
+                    <button class="chip" data-group="string-style" data-ru="Больше мощи" data-sr="Više snage">Больше мощи</button>
+                    <button class="chip" data-group="string-style" data-ru="Больше контроля" data-sr="Više kontrole">Больше контроля</button>
+                    <button class="chip" data-group="string-style" data-ru="Агрессивный" data-sr="Agresivan">Агрессивный</button>
+                    <button class="chip" data-group="string-style" data-ru="Универсальный" data-sr="Svestran">Универсальный</button>
+                </div>
+            </div>
+            <div class="survey-group">
+                <div class="survey-label" id="lbl-string-contact2">Контактный телефон</div>
+                <input type="tel" id="string-phone2" placeholder="+381 ...">
+            </div>
+        </div>
+
+        <button class="btn hidden" id="string-submit" onclick="submitStringing()">Отправить заявку</button>
         <button class="btn btn-back" onclick="showScreen('main-screen')" data-ru="Назад" data-sr="Nazad">Назад</button>
     </div>
 
@@ -374,6 +474,10 @@
             saveFail: 'Не удалось сохранить запись. Проверьте интернет и попробуйте снова.',
             withCoach: 'Тренировка с тренером ',
             dur: { '1':'1 час','1.5':'1.5 часа','2':'2 часа','2.5':'2.5 часа','3':'3 часа' },
+            btnStringing: '🎯 Перетяжка струн',
+            stringTitle: '🎯 Перетяжка струн',
+            stringSub: 'Стоимость: 3000 RSD',
+            stringTrust: 'Как хотите оформить заказ?',
         },
         sr: {
             tagline: 'Tenis — igra za zadovoljstvo i razvoj u svakom uzrastu!',
@@ -436,6 +540,10 @@
             saveFail: 'Nije uspelo čuvanje rezervacije. Proverite internet i pokušajte ponovo.',
             withCoach: 'Trening sa trenerom ',
             dur: { '1':'1 sat','1.5':'1.5 sat','2':'2 sata','2.5':'2.5 sata','3':'3 sata' },
+            btnStringing: '🎯 Žičanje reketa',
+            stringTitle: '🎯 Žičanje reketa',
+            stringSub: 'Cena: 3000 RSD',
+            stringTrust: 'Kako želite da naručite?',
         }
     };
 
@@ -471,6 +579,8 @@
         set('lbl-level', L.lblLevel); set('lbl-racket', L.lblRacket);
         set('lbl-who', L.lblWho); set('lbl-notes', L.lblNotes);
         set('lbl-my-title', L.myTitle); set('lbl-my-sub', L.mySub);
+        set('btn-stringing', L.btnStringing);
+        set('lbl-string-title', L.stringTitle); set('lbl-string-sub', L.stringSub);
         set('lbl-result-title', L.resultTitle);
         set('lbl-phone', L.phoneLabel); set('lbl-loading', L.loading);
         // chips
@@ -890,12 +1000,130 @@
     async function cancelBooking(date, time, target) {
         if (!confirm(t('confirmCancel') + '\n' + target + ' · ' + formatDate(date) + ' в ' + time)) return;
         try {
-            await sendBooking({ action: 'cancel', date, time, target, tgId: userId });
-            globalBookings = globalBookings.filter(b =>
-                !(normalizeDate(b.date)===date && normalizeTime(b.time)===time && b.target===target)
-            );
-            tg.showAlert(t('cancelled')); openMyBookings();
+            const res = await sendBooking({ action: 'cancel', date, time, target, tgId: userId });
+            let ok = false;
+            try { const j = await res.json(); ok = j && j.ok; } catch(_){ ok = true; }
+            if (ok) {
+                globalBookings = globalBookings.filter(b =>
+                    !(normalizeDate(b.date)===date && normalizeTime(b.time)===time && b.target===target)
+                );
+                tg.showAlert(t('cancelled'));
+                openMyBookings();
+            } else {
+                tg.showAlert(t('cancelFail'));
+            }
         } catch(e) { tg.showAlert(t('cancelFail')); }
+    }
+
+    // ── Первый визит к тренеру ─────────────────────────────
+    // Проверяем есть ли у пользователя хоть одна прошлая тренировка
+    function isReturningCoachClient() {
+        const now = new Date();
+        return globalBookings.some(b => {
+            if (!b.isUser) return false;
+            if (b.target !== 'Галина' && b.target !== 'Наталья') return false;
+            if (String(b.tgId) !== userId && b.phone !== userPhone) return false;
+            const nd = normalizeDate(b.date); const nt = normalizeTime(b.time);
+            const [yr,mo,dy] = nd.split('-').map(Number);
+            const [hh,mm] = nt.split(':').map(Number);
+            const bt = new Date(yr,mo-1,dy,hh,mm);
+            return bt < now; // прошедшая запись
+        });
+    }
+
+    // Переопределяем показ анкеты тренера
+    function maybeShowCoachSurvey() {
+        const survey = document.getElementById('coach-survey');
+        if (!survey) return;
+        if (isReturningCoachClient()) {
+            // Постоянный клиент — спрашиваем только один вопрос
+            survey.innerHTML =
+                '<div class="survey-group">' +
+                '<div class="survey-label">' + (currentLang === 'sr' ? 'Da li je ovo vaš prvi trening?' : 'Это ваша первая тренировка?') + '</div>' +
+                '<div class="chip-row">' +
+                '<button class="chip" id="chip-first-yes" onclick="toggleFirstTimer(true)">' + (currentLang === 'sr' ? 'Da, prvi put' : 'Да, первый раз') + '</button>' +
+                '<button class="chip" id="chip-first-no" onclick="toggleFirstTimer(false)">' + (currentLang === 'sr' ? 'Ne, idem redovno' : 'Нет, хожу регулярно') + '</button>' +
+                '</div></div>' +
+                '<div id="full-survey-block" class="hidden">' + document.getElementById('full-survey-template').innerHTML + '</div>';
+        } else {
+            // Новый клиент — полная анкета
+            survey.innerHTML = document.getElementById('full-survey-template').innerHTML;
+            initChips();
+        }
+    }
+
+    function toggleFirstTimer(isFirst) {
+        document.querySelectorAll('#chip-first-yes, #chip-first-no').forEach(b => b.classList.remove('selected'));
+        document.getElementById(isFirst ? 'chip-first-yes' : 'chip-first-no').classList.add('selected');
+        const block = document.getElementById('full-survey-block');
+        if (block) {
+            if (isFirst) { block.classList.remove('hidden'); initChips(); }
+            else { block.classList.add('hidden'); }
+        }
+    }
+
+    // ── Перетяжка струн ────────────────────────────────────
+    let stringMode = '';
+
+    function selectStringMode(mode) {
+        stringMode = mode;
+        document.getElementById('chip-trust').classList.toggle('selected', mode === 'trust');
+        document.getElementById('chip-detail').classList.toggle('selected', mode === 'detail');
+        document.getElementById('string-simple').classList.toggle('hidden', mode !== 'trust');
+        document.getElementById('string-detail').classList.toggle('hidden', mode !== 'detail');
+        document.getElementById('string-submit').classList.remove('hidden');
+        // Инициализируем chips в форме
+        document.querySelectorAll('#string-detail .chip').forEach(chip => {
+            chip.addEventListener('click', function() {
+                const group = this.getAttribute('data-group');
+                document.querySelectorAll('.chip[data-group="' + group + '"]').forEach(c => c.classList.remove('selected'));
+                this.classList.add('selected');
+            });
+        });
+    }
+
+    async function submitStringing() {
+        if (!stringMode) return tg.showAlert(currentLang === 'sr' ? 'Izaberite opciju.' : 'Выберите вариант оформления.');
+        let racket = '', phone = '', tension = '', stringType = '', style = '';
+        if (stringMode === 'trust') {
+            racket = (document.getElementById('string-racket-simple').value || '').trim();
+            phone  = (document.getElementById('string-phone').value || userPhone || '').trim();
+            if (!racket) return tg.showAlert(currentLang === 'sr' ? 'Unesite model reketa.' : 'Укажите модель ракетки.');
+        } else {
+            racket  = (document.getElementById('string-racket-detail').value || '').trim();
+            tension = (document.getElementById('string-tension').value || '').trim();
+            phone   = (document.getElementById('string-phone2').value || userPhone || '').trim();
+            const stEl = document.querySelector('.chip[data-group="string-type"].selected');
+            const ssEl = document.querySelector('.chip[data-group="string-style"].selected');
+            stringType = stEl ? stEl.getAttribute('data-ru') : '';
+            style      = ssEl ? ssEl.getAttribute('data-ru') : '';
+            if (!racket) return tg.showAlert(currentLang === 'sr' ? 'Unesite model reketa.' : 'Укажите модель ракетки.');
+        }
+        const btn = document.getElementById('string-submit');
+        btn.disabled = true;
+        btn.innerText = t('sending');
+        const data = {
+            action: 'stringing',
+            name: userName, tgId: userId, username: userUsername,
+            phone, racket, tension, stringType, style, mode: stringMode
+        };
+        try {
+            await sendBooking(data);
+            document.getElementById('result-text').innerHTML =
+                '<b>' + (currentLang === 'sr' ? '🎯 Zahtev za žičanje primljen!' : '🎯 Заявка на перетяжку принята!') + '</b><br><br>' +
+                (currentLang === 'sr' ? 'Ракета: ' : 'Ракетка: ') + racket +
+                (tension ? '<br>' + (currentLang === 'sr' ? 'Zatezanje: ' : 'Натяжение: ') + tension : '') +
+                (stringType ? '<br>' + (currentLang === 'sr' ? 'Tip žice: ' : 'Тип струн: ') + stringType : '') +
+                (style ? '<br>' + (currentLang === 'sr' ? 'Stil: ' : 'Стиль: ') + style : '') +
+                '<br><br>' + (currentLang === 'sr' ? 'Trener će vas kontaktirati radi dogovora.' : 'Тренер свяжется с вами для уточнения деталей.');
+            showScreen('result-screen');
+            if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
+        } catch(e) {
+            tg.showAlert(t('saveFail'));
+        } finally {
+            btn.disabled = false;
+            btn.innerText = currentLang === 'sr' ? 'Pošalji zahtev' : 'Отправить заявку';
+        }
     }
 </script>
 </body>
