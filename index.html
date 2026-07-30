@@ -207,6 +207,10 @@
             <label id="lbl-court-time">Доступное время:</label>
             <div class="time-grid" id="court-time-grid"></div>
         </div>
+        <div class="form-group">
+            <label id="lbl-opponent">Соперник (необязательно):</label>
+            <input type="text" id="court-opponent" placeholder="Имя соперника">
+        </div>
         <button class="btn" id="court-submit" onclick="submitData('court')">Забронировать</button>
         <button class="btn btn-back" onclick="showScreen('main-screen')" id="btn-back-court">Назад</button>
     </div>
@@ -441,6 +445,7 @@
         <div class="result-icon">✅</div>
         <h2 id="lbl-result-title">Готово!</h2>
         <div class="result-card" id="result-text"></div>
+        <button class="btn btn-outline hidden" id="btn-invite-opponent" onclick="shareOpponentInvite()">📤 Пригласить соперника</button>
         <button class="btn" onclick="showScreen('main-screen')" id="btn-result-menu">В главное меню</button>
     </div>
 </div>
@@ -485,6 +490,14 @@
     let selectedCourtDuration = 1;
     let selectedCoachCourt = 'Корт 6';
     let globalBookings = [];
+    // Предзагрузка: обе сетевые операции ниже — это отдельные запросы к Apps Script,
+    // который сам по себе не быстрый (холодный старт + внутренний редирект). Раньше
+    // они ждали друг друга ПОСЛЕДОВАТЕЛЬНО в login() — вот и набегала заметная задержка.
+    // Теперь запускаем оба СРАЗУ при открытии мини-аппа (ещё до нажатия "Войти"), и в
+    // login() просто дожидаемся уже запущенных промисов — вместо двух запросов подряд
+    // получаем два запроса ПАРАЛЛЕЛЬНО, а к моменту входа часть данных уже готова.
+    let bookingsPreload = null;
+    let phonePreload = null;
     let currentLang = 'ru';
     /* ═══════════ ПЕРЕВОДЫ ═══════════ */
     const T = {
@@ -533,7 +546,9 @@
             withCoach: 'Тренировка с тренером ', courtRent: 'Аренда корта',
             hrs: 'ч', moved: 'Запись перенесена!',
             stringTitle: '🎯 Перетяжка струн', stringSub: 'Стоимость: 3000 RSD', stringTrust: 'Как хотите оформить заказ?',
-            stringSend: 'Отправить заявку'
+            stringSend: 'Отправить заявку',
+            opponentLabel: 'Соперник (необязательно):', opponentPlaceholder: 'Имя соперника',
+            inviteBtn: '📤 Пригласить соперника', inviteCopied: 'Текст скопирован — вставьте его в сообщение.'
         },
         sr: {
             tagline: 'Tenis — igra za zadovoljstvo i razvoj u svakom uzrastu!',
@@ -580,7 +595,9 @@
             withCoach: 'Trening sa trenerom ', courtRent: 'Zakup terena',
             hrs: 'sat', moved: 'Rezervacija pomerena!',
             stringTitle: '🎯 Žičanje reketa', stringSub: 'Cena: 3000 RSD', stringTrust: 'Kako želite da naručite?',
-            stringSend: 'Pošalji zahtev'
+            stringSend: 'Pošalji zahtev',
+            opponentLabel: 'Protivnik (opciono):', opponentPlaceholder: 'Ime protivnika',
+            inviteBtn: '📤 Pozovi protivnika', inviteCopied: 'Tekst je kopiran — nalepite ga u poruku.'
         }
     };
     function t(key) { return T[currentLang][key] !== undefined ? T[currentLang][key] : (T.ru[key] || key); }
@@ -616,9 +633,11 @@
         set('court-submit', L.book); set('coach-submit', L.enroll);
         set('btn-back-court', L.back); set('login-btn', L.login);
         set('reschedule-submit', L.rescheduleBtn); set('string-submit', L.stringSend); set('btn-result-menu', L.toMenu);
+        set('lbl-opponent', L.opponentLabel); set('btn-invite-opponent', L.inviteBtn);
         document.querySelectorAll('.btn-back').forEach(b => { if (!b.id) b.innerText = L.back; });
         document.querySelectorAll('.chip').forEach(c => { const v = c.getAttribute('data-' + currentLang); if (v) c.innerText = v; });
         const notes = document.getElementById('coach-notes'); if (notes) notes.placeholder = L.notesPlaceholder;
+        const oppInput = document.getElementById('court-opponent'); if (oppInput) oppInput.placeholder = L.opponentPlaceholder;
         refreshCourtDurButtons();
     }
     /* ═══════════ МИНИ-КАЛЕНДАРЬ ВЫБОРА ДАТЫ (студент) ═══════════
@@ -701,6 +720,10 @@
         rescheduleCal = makeCalPicker('reschedule-month-label', 'reschedule-calendar', () => generateRescheduleSlots());
         courtCal.selectToday();
         coachCal.selectToday();
+        // Запускаем оба сетевых запроса сразу, не дожидаясь нажатия "Войти" —
+        // пока пользователь смотрит приветственный экран, данные уже грузятся.
+        bookingsPreload = refreshBookings();
+        if (tgUser) phonePreload = fetchSavedPhone();
         fillPhoneCodes('string-code'); fillPhoneCodes('string-code2');
         initChips();
         const sub = document.getElementById('auth-subtitle');
@@ -716,11 +739,13 @@
         }
         document.getElementById('login-btn').classList.add('hidden');
         document.getElementById('loader').classList.remove('hidden');
-        await refreshBookings();
+        // Используем уже запущенный при открытии приложения запрос, если он есть
+        // (обычно уже готов или почти готов) — вместо того, чтобы начинать заново.
+        await (bookingsPreload || refreshBookings());
         // Реальный Telegram-пользователь и телефон ещё не известен — спрашиваем один раз здесь,
         // а не на каждом экране бронирования. Если телефон уже сохранён на сервере — молча берём его.
         if (tgUser && !userPhone) {
-            await fetchSavedPhone();
+            await (phonePreload || fetchSavedPhone());
             if (!userPhone && phoneSupported()) {
                 document.getElementById('loader').classList.add('hidden');
                 document.getElementById('auth-phone-request').classList.remove('hidden');
@@ -1061,7 +1086,12 @@
             }
         }
         let notes = '';
+        let oppName = '';
         if (isCoach) { const s = getSurveyData(); notes = [s.level && ('Уровень: '+s.level), s.racket, s.who && ('Игроки: '+s.who), s.notes].filter(Boolean).join(' · '); }
+        else {
+            oppName = (document.getElementById('court-opponent').value || '').trim();
+            if (oppName) notes = (currentLang === 'sr' ? 'Protivnik: ' : 'Соперник: ') + oppName;
+        }
         const payload = {
             action: 'book', court, date, time, duration,
             service: isCoach ? 'coach' : 'court',
@@ -1084,11 +1114,48 @@
                 '<br><br>📍 <b>Meridiana</b> — Стојана Новаковића 2, Нови Сад<br><br>' +
                 '🌳 <b>' + t('parkLabel') + '</b> ' + t('parkText') + '<br>🚗 <b>' + t('roadLabel') + '</b> ' + t('roadText') + '<br><br>' +
                 '<a href="https://maps.app.goo.gl/sB2UUFYJfySGqvKm7" target="_blank" style="color:var(--clay)">' + t('mapLink') + '</a>';
+            const inviteBtn = document.getElementById('btn-invite-opponent');
+            if (!isCoach) {
+                lastBookingForInvite = { court, date, time, duration, oppName };
+                inviteBtn.classList.remove('hidden');
+            } else {
+                lastBookingForInvite = null;
+                inviteBtn.classList.add('hidden');
+            }
             showScreen('result-screen');
             if (tg.HapticFeedback) tg.HapticFeedback.notificationOccurred('success');
-            if (isCoach) { selectedSlots = []; selectedTime = ''; } else { selectedCourtTime = ''; }
+            if (isCoach) { selectedSlots = []; selectedTime = ''; }
+            else { selectedCourtTime = ''; document.getElementById('court-opponent').value = ''; }
         } catch(e) { tg.showAlert(t('saveFail')); }
         finally { btn.disabled = false; btn.innerText = orig; }
+    }
+    /* ═══════════ ПРИГЛАШЕНИЕ СОПЕРНИКА (аренда корта) ═══════════
+       Соперник не обязательно пользуется ботом, поэтому вместо привязки к
+       конкретному Telegram-аккаунту — просто готовое сообщение с деталями брони
+       и адресом клуба (не ссылкой на приложение — ей нечего там делать),
+       которое можно переслать в любом мессенджере (Telegram/WhatsApp/SMS). */
+    let lastBookingForInvite = null;
+    function shareOpponentInvite() {
+        if (!lastBookingForInvite) return;
+        const b = lastBookingForInvite;
+        const dur = b.duration > 1 ? ' · ' + courtDurLabel(b.duration) : '';
+        const greet = currentLang === 'sr'
+            ? (b.oppName ? b.oppName + ', zovem te da igramo tenis! 🎾' : 'Zovem te da igramo tenis! 🎾')
+            : (b.oppName ? b.oppName + ', приглашаю сыграть в теннис! 🎾' : 'Приглашаю сыграть в теннис! 🎾');
+        const address = currentLang === 'sr'
+            ? '📍 Meridiana — Stojana Novakovića 2, Novi Sad'
+            : '📍 Meridiana — Стојана Новаковића 2, Нови Сад';
+        const text = greet + '\n' + b.court + '\n📅 ' + formatDate(b.date) + ' · 🕐 ' + b.time + dur + '\n\n' + address;
+        if (navigator.share) {
+            navigator.share({ text: text }).catch(() => {});
+        } else if (navigator.clipboard && navigator.clipboard.writeText) {
+            navigator.clipboard.writeText(text).then(
+                () => tg.showAlert(t('inviteCopied')),
+                () => tg.showAlert(text)
+            );
+        } else {
+            tg.showAlert(text);
+        }
     }
     /* ═══════════ МОИ ЗАПИСИ ═══════════ */
     function isMine(b) {
