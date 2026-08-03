@@ -16,8 +16,8 @@
             --card-bg: #EDF3FA;
             --border: #CFE0F0;
             --white: #FFFFFF;
-            --free: #18A39A;          /* свободно — бирюза */
-            --free-bg: #DCF1EF;
+            --free: #C6F24E;          /* свободно — лайм */
+            --free-bg: #F3FBD9;
             --busy: #D9534F;          /* занято — красный */
             --busy-bg: #FBEAEA;
             --closed: #9E3B38;        /* закрыто — тёмно-красный */
@@ -32,6 +32,7 @@
         .btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; background-color: var(--clay); color: var(--white); border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all .15s; }
         .btn:active { background-color: var(--clay-dark); }
         .btn:disabled { opacity: 0.5; cursor: default; }
+        .btn.flash { background-color: var(--free) !important; color: var(--text) !important; }
         .btn-outline { background-color: var(--white); color: var(--clay); border: 2px solid var(--clay); }
         .btn-outline:active { background-color: var(--clay-light); }
         .btn-back { background-color: var(--card-bg); color: var(--hint); border: 1px solid var(--border); margin-top: 8px; }
@@ -58,6 +59,27 @@
         .hidden { display: none !important; }
         .user-chip { text-align: center; font-size: 13px; color: var(--hint); margin-bottom: 16px; }
         #loader { text-align: center; color: var(--hint); font-weight: 500; margin-top: 20px; }
+        /* Простая анимация теннисного мяча — крутится и подпрыгивает, пока грузятся данные. */
+        .ball-loader { width: 30px; height: 30px; margin: 0 auto 10px; position: relative; animation: ballHop .7s ease-in-out infinite; }
+        .ball-loader::before {
+            content: ''; position: absolute; inset: 0; border-radius: 50%;
+            background: radial-gradient(circle at 32% 28%, #EFFFB0, var(--free) 65%);
+            box-shadow: 0 3px 4px rgba(16,42,68,.2);
+        }
+        .ball-loader::after {
+            content: ''; position: absolute; left: 8%; right: 8%; top: -6%; bottom: -6%;
+            border: 2px solid rgba(255,255,255,.6); border-radius: 50%;
+            clip-path: polygon(0 0, 45% 0, 45% 100%, 0 100%);
+            animation: ballSpin .7s linear infinite;
+        }
+        @keyframes ballHop {
+            0%, 100% { transform: translateY(0); }
+            35% { transform: translateY(-16px); }
+            55% { transform: translateY(0); }
+            70% { transform: translateY(-4px); }
+            85% { transform: translateY(0); }
+        }
+        @keyframes ballSpin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
         .lang-switcher { display: flex; justify-content: flex-end; padding: 10px 0 0; gap: 6px; }
         .lang-btn { padding: 4px 12px; border-radius: 20px; border: 1.5px solid var(--clay); background: transparent; color: var(--clay); font-size: 13px; font-weight: 600; cursor: pointer; }
         .lang-btn.active { background: var(--clay); color: var(--white); }
@@ -108,7 +130,7 @@
         .day-card.booked { border-left: 4px solid var(--busy); }
         .day-card.closed { border-left: 4px solid var(--closed); }
         .day-card.pending { border-left: 4px solid var(--ball); }
-        .free-chip { display: inline-block; font-size: 12px; padding: 4px 9px; border-radius: 8px; background: var(--free-bg); color: #0E6F68; border: 1px solid var(--free); }
+        .free-chip { display: inline-block; font-size: 12px; padding: 4px 9px; border-radius: 8px; background: var(--free-bg); color: #516B0E; border: 1px solid var(--free); }
         .seg { flex: 1; padding: 8px; border: 1.5px solid var(--border); border-radius: 8px; background: var(--white); color: var(--text); font-size: 13px; cursor: pointer; }
         .seg.on { background: var(--clay); color: var(--white); border-color: var(--clay); }
         .day-card .ct { display: inline-block; font-size: 11px; padding: 1px 8px; border-radius: 20px; background: var(--white); border: 1px solid var(--border); margin-right: 6px; }
@@ -158,7 +180,10 @@
             <input type="tel" id="user-phone" placeholder="+381 ...">
         </div>
         <button class="btn" id="login-btn" onclick="login()">Войти</button>
-        <div id="loader" class="hidden">🔄 <span id="lbl-loading">Загрузка расписания...</span></div>
+        <div id="loader" class="hidden">
+            <div class="ball-loader"></div>
+            <span id="lbl-loading">Загрузка расписания...</span>
+        </div>
         <div id="auth-phone-request" class="hidden" style="margin-top:12px">
             <p class="subtitle" style="margin-bottom:10px">Поделитесь номером телефона, чтобы тренер мог с вами связаться (спросим только один раз).</p>
             <button class="btn btn-outline" style="margin-bottom:8px" onclick="shareContact()">📱 Поделиться телефоном</button>
@@ -169,11 +194,11 @@
     <div id="main-screen" class="hidden">
         <h2 id="lbl-menu">Главное меню</h2>
         <div class="user-chip" id="user-chip"></div>
-        <button class="btn" onclick="openBooking('court')" id="btn-court">📅 Аренда корта</button>
-        <button class="btn" onclick="openBooking('coach')" id="btn-coach">💪 Тренировка с тренером</button>
-        <button class="btn btn-outline" onclick="showScreen('stringing-screen')" id="btn-stringing">🎯 Перетяжка струн</button>
-        <button class="btn btn-outline" onclick="openMyBookings()" id="btn-mybookings">📋 Мои записи</button>
-        <button class="btn hidden" onclick="openSchedule()" id="btn-schedule" style="background:var(--clay-dark)">🎾 Расписание (тренер)</button>
+        <button class="btn" onclick="menuNav(this, () => openBooking('court'))" id="btn-court">📅 Аренда корта</button>
+        <button class="btn" onclick="menuNav(this, () => openBooking('coach'))" id="btn-coach">💪 Тренировка с тренером</button>
+        <button class="btn" onclick="menuNav(this, () => showScreen('stringing-screen'))" id="btn-stringing">🎯 Перетяжка струн</button>
+        <button class="btn" onclick="menuNav(this, () => openMyBookings())" id="btn-mybookings">📋 Мои записи</button>
+        <button class="btn hidden" onclick="menuNav(this, () => openSchedule())" id="btn-schedule" style="background:var(--clay-dark)">🎾 Расписание (тренер)</button>
     </div>
     <!-- АРЕНДА КОРТА -->
     <div id="court-booking-screen" class="hidden">
@@ -225,7 +250,7 @@
                     <div class="coach-emoji" style="display:none">🎾</div>
                     <div>
                         <div class="coach-name">Галина</div>
-                        <div class="coach-tags" id="w-g-tags">Стаж > 30 лет · Мастер спорта · US PTR Professional </div>
+                        <div class="coach-tags" id="w-g-tags">Стаж > 30 лет · Мастер спорта · US PTR Professional · KMC</div>
                         <div style="font-size:13px;color:var(--clay);margin-top:2px">📷 @setmatchgala</div>
                     </div>
                 </div>
@@ -795,6 +820,18 @@
         document.getElementById(id).classList.remove('hidden');
         window.scrollTo(0, 0);
     }
+    // Кнопки главного меню: коротко подсвечиваем зелёным (--free), даём это увидеть,
+    // и только потом выполняем сам переход — визуальное подтверждение нажатия.
+    function menuNav(btn, fn) {
+        if (btn._navBusy) return;
+        btn._navBusy = true;
+        btn.classList.add('flash');
+        setTimeout(() => {
+            btn.classList.remove('flash');
+            btn._navBusy = false;
+            fn();
+        }, 150);
+    }
     function openBooking(type) {
         if (type === 'court') {
             selectedCourtTime = '';
@@ -1101,7 +1138,8 @@
         try {
             const res = await post(payload); const j = await res.json();
             if (!j || !j.ok) {
-                tg.showAlert(t('alertOccupied')); await refreshBookings();
+                tg.showAlert(j && j.error === 'past' ? t('alertPast') : t('alertOccupied'));
+                await refreshBookings();
                 if (isCoach) generateSlots(type); else generateCourtSlots();
                 return;
             }
@@ -1268,7 +1306,10 @@
                 duration: rescheduleDuration, service: rescheduleData.service,
                 clientId: userId, clientName: userName, phone: userPhone, username: userUsername, notes: ''
             })).json();
-            if (!create || !create.ok) { tg.showAlert(t('alertOccupied')); btn.disabled = false; btn.innerText = t('rescheduleBtn'); return; }
+            if (!create || !create.ok) {
+                tg.showAlert(create && create.error === 'past' ? t('alertPast') : t('alertOccupied'));
+                btn.disabled = false; btn.innerText = t('rescheduleBtn'); return;
+            }
             // 2) отменяем старую по id
             const cancel = await (await post({ action: 'cancel', id: rescheduleData.id })).json();
             if (cancel && cancel.error === 'too_late') { tg.showAlert(t('tooLate')); }
