@@ -6,6 +6,13 @@ A Telegram Mini App for booking tennis courts and coaching sessions at a club in
 
 **Solution.** Players book inside Telegram. Coaches get every change instantly. When a regular player cancels, the freed slot is announced and can be rebooked right away.
 
+<p>
+  <img src="docs/screenshots/01-welcome.jpg" width="200" alt="Welcome screen">
+  <img src="docs/screenshots/02-menu.jpg" width="200" alt="Main menu">
+  <img src="docs/screenshots/03-calendar.jpg" width="200" alt="Booking calendar">
+  <img src="docs/screenshots/04-reminder.jpg" width="200" alt="Reminder in the bot">
+</p>
+
 ## Features
 
 **Players**
