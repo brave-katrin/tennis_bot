@@ -133,7 +133,7 @@ function doPost(e) {
 
     // Действия, которые создают записи или шлют уведомления, — только с валидной подписью
     // Telegram. Иначе любой, кто знает URL скрипта, мог бы создавать брони и спамить тренеров.
-    const SIGNED_ONLY = ["book", "stringing"];
+    const SIGNED_ONLY = ["book", "stringing", "reschedule"];
     if (!DEV_MODE && !auth.ok && SIGNED_ONLY.indexOf(data.action) !== -1) {
       return jsonOut({ ok: false, error: "forbidden" });
     }
@@ -154,6 +154,10 @@ function doPost(e) {
           if (own && String(own.clientId) !== String(auth.id)) return jsonOut({ ok: false, error: "forbidden" });
         }
         return jsonOut(cancelBooking(data.id, false));
+
+      case "reschedule":
+        // Студент переносит свою бронь одним запросом (владелец проверяется по подписи).
+        return jsonOut(rescheduleBooking(data, auth.ok ? String(auth.id) : ""));
 
       case "block":
         if (!isCoachReq) return jsonOut({ ok: false, error: "forbidden" });
@@ -401,7 +405,7 @@ function createBooking(data) {
 
     if (!COURTS.includes(court)) {
       result = { ok: false, error: "bad_court" };
-    } else if (!date || !time) {
+    } else if (!validSlot(date, time)) {
       result = { ok: false, error: "bad_datetime" };
     } else if (hoursUntil(date, time) <= 0) {
       // Клиент уже прячет прошедшие слоты в интерфейсе, но это дополнительная
@@ -440,16 +444,62 @@ function createBooking(data) {
 
 // Отмена. byCoach=true снимает ограничение 12 часов. Иначе — проверяем на сервере.
 function cancelBooking(id, byCoach) {
-  const b = findById(id);
-  if (!b || b.status === STATUS.CANCELLED) return { ok: false, error: "not_found" };
-
-  if (!byCoach && hoursUntil(b.date, b.time) < CANCEL_CUTOFF_HRS) {
-    return { ok: false, error: "too_late", cutoff: CANCEL_CUTOFF_HRS };
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  let result, b = null;
+  try {
+    b = findById(id);
+    if (!b || b.status === STATUS.CANCELLED) {
+      result = { ok: false, error: "not_found" };
+    } else if (!byCoach && hoursUntil(b.date, b.time) < CANCEL_CUTOFF_HRS) {
+      result = { ok: false, error: "too_late", cutoff: CANCEL_CUTOFF_HRS };
+    } else {
+      patchRow(b._row, { status: STATUS.CANCELLED });
+      result = { ok: true };
+    }
+  } finally {
+    lock.releaseLock();
   }
+  if (result.ok) notifyCancellation(b, byCoach);
+  return result;
+}
 
-  patchRow(b._row, { status: STATUS.CANCELLED });
-  notifyCancellation(b, byCoach);
-  return { ok: true };
+// Перенос студентом: та же бронь меняет дату/время/длительность за один шаг под локом.
+// Раньше мини-апп создавал новую бронь и отменял старую двумя запросами; если отмена
+// не проходила (меньше 12 часов, сеть), у студента оставались ДВЕ брони.
+function rescheduleBooking(data, uid) {
+  const lock = LockService.getScriptLock();
+  lock.waitLock(10000);
+  let result, notifyArgs = null;
+  try {
+    const b = findById(String(data.id || ""));
+    const date = String(data.date || "").trim();
+    const time = padTime(String(data.time || "").trim());
+    if (!b || b.status !== STATUS.CONFIRMED || b.service === "block") {
+      result = { ok: false, error: "not_found" };
+    } else if (!DEV_MODE && String(b.clientId) !== String(uid)) {
+      result = { ok: false, error: "forbidden" };
+    } else if (hoursUntil(b.date, b.time) < CANCEL_CUTOFF_HRS) {
+      result = { ok: false, error: "too_late", cutoff: CANCEL_CUTOFF_HRS };
+    } else if (!validSlot(date, time)) {
+      result = { ok: false, error: "bad_datetime" };
+    } else if (hoursUntil(date, time) <= 0) {
+      result = { ok: false, error: "past" };
+    } else {
+      const duration = clampDuration(b.service, Number(data.duration) || b.duration || 1);
+      if (hasConflict(getBookings(), b.court, date, time, duration, b.id)) {
+        result = { ok: false, error: "occupied" };
+      } else {
+        patchRow(b._row, { date: date, time: time, duration: duration });
+        notifyArgs = { old: b, moved: Object.assign({}, b, { date: date, time: time, duration: duration }) };
+        result = { ok: true, date: date, time: time, duration: duration };
+      }
+    }
+  } finally {
+    lock.releaseLock();
+  }
+  if (notifyArgs) notifyReschedule(notifyArgs.old, notifyArgs.moved);
+  return result;
 }
 
 // Тренер закрывает слот (отпуск / корт занят и т.п.).
@@ -816,6 +866,20 @@ function notifyCancellation(b, byCoach) {
   }
 }
 
+function notifyReschedule(oldB, b) {
+  const dur = b.duration > 1 ? " · " + b.duration + " ч" : "";
+  const text =
+    "🔄 Перенос записи (клиентом)\n" + serviceLabel(b) + "\n" + b.court + "\n" +
+    "Было: " + formatDateRu(oldB.date) + " в " + oldB.time + "\n" +
+    "Стало: " + formatDateRu(b.date) + " в " + b.time + dur + "\n" +
+    "Клиент: " + (b.clientName || "—") + (b.username ? " (@" + b.username + ")" : "");
+  chatsForCourt(b.court).forEach(id => tgSend(id, text));
+  if (b.clientId) {
+    tgSend(b.clientId, "✅ Запись перенесена\n🎾 " + serviceLabel(b) + "\n🏟 " + b.court +
+      "\n📅 " + formatDateRu(b.date) + " в " + b.time + dur, openBtn());
+  }
+}
+
 function notifyStudentProposal(b, opts) {
   if (!b.clientId) return;
   const dur = b.duration > 1 ? " · " + b.duration + " ч" : "";
@@ -1065,6 +1129,19 @@ function setWebhook() {
 
 /* ════════════════ ВСПОМОГАТЕЛЬНОЕ ════════════════ */
 
+// Дата yyyy-MM-dd не раньше сегодня и не дальше чем через BOOK_AHEAD_DAYS дней;
+// время — начало слота с шагом 30 минут между OPEN_HOUR и CLOSE_HOUR.
+// Мини-апп и так показывает только такие слоты; это защита от прямых запросов к API.
+const BOOK_AHEAD_DAYS = 31;
+function validSlot(date, time) {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(date) || !/^\d{2}:\d{2}$/.test(time)) return false;
+  const m = toMinutes(time);
+  if (m % 30 !== 0 || m < OPEN_HOUR * 60 || m > CLOSE_HOUR * 60) return false;
+  const today = Utilities.formatDate(new Date(), TZ, "yyyy-MM-dd");
+  const max = Utilities.formatDate(new Date(Date.now() + BOOK_AHEAD_DAYS * 86400000), TZ, "yyyy-MM-dd");
+  return date >= today && date <= max;
+}
+
 function rowFor(obj) { return COLUMNS.map(c => obj[c] !== undefined ? obj[c] : ""); }
 
 // options хранится как JSON-текст [{date,time}]. Безопасно разбираем в массив.
@@ -1115,11 +1192,11 @@ function toMinutes(t)   { const [h, m] = padTime(t).split(":").map(Number); retu
 function fromMinutes(x) { return pad2(Math.floor(x / 60)) + ":" + pad2(x % 60); }
 
 // Сколько часов от "сейчас" до брони (date "yyyy-MM-dd", time "HH:MM").
+// Время брони считаем в часовом поясе клуба (TZ), а не в поясе проекта Apps Script:
+// иначе при другом поясе проекта съезжают «прошедшие» слоты, правило 12 часов и напоминания.
 function hoursUntil(date, time) {
-  const [y, mo, d] = date.split("-").map(Number);
-  const [h, mi] = padTime(time).split(":").map(Number);
-  const when = new Date(y, mo - 1, d, h, mi, 0);
-  return (when - new Date()) / 3600000;
+  const when = Utilities.parseDate(date + " " + padTime(time), TZ, "yyyy-MM-dd HH:mm");
+  return (when.getTime() - Date.now()) / 3600000;
 }
 
 function formatDateRu(dateStr) {

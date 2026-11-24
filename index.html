@@ -32,6 +32,7 @@
         .btn { display: block; width: 100%; padding: 15px; margin-bottom: 12px; background-color: var(--clay); color: var(--white); border: none; border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; transition: all .15s; }
         .btn:active { background-color: var(--clay-dark); }
         .btn:disabled { opacity: 0.5; cursor: default; }
+ .cal-nav:disabled { opacity: 0.3; cursor: default; }
         .btn.flash { background-color: var(--free) !important; color: var(--text) !important; }
         .btn-outline { background-color: var(--white); color: var(--clay); border: 2px solid var(--clay); }
         .btn-outline:active { background-color: var(--clay-light); }
@@ -702,15 +703,44 @@
             }
             const grid = document.getElementById(gridId);
             grid.innerHTML = html;
+            // Стрелки: нельзя уйти раньше текущего месяца и дальше месяца последнего доступного дня.
+            const navs = document.getElementById(monthLabelId).parentElement.querySelectorAll('.cal-nav');
+            if (navs.length === 2) {
+                navs[0].disabled = state.month <= minMonth();
+                navs[1].disabled = state.month >= maxMonth();
+            }
             grid.querySelectorAll('.cal-day[data-ds]').forEach(el => {
                 el.onclick = () => { state.selDate = el.getAttribute('data-ds'); render(); onSelect(state.selDate); };
             });
         }
+        function minMonth() { return new Date(today.getFullYear(), today.getMonth(), 1); }
+        function maxMonth() { const d = maxBookableDate(); return new Date(d.getFullYear(), d.getMonth(), 1); }
+        // Первый доступный день показанного месяца (сегодня — для текущего месяца).
+        function firstBookable(month) {
+            const maxD = maxBookableDate();
+            for (let d = 1; d <= 31; d++) {
+                const o = new Date(month.getFullYear(), month.getMonth(), d);
+                if (o.getMonth() !== month.getMonth()) break;
+                if (o >= today && o <= maxD) return o.getFullYear() + '-' + String(o.getMonth()+1).padStart(2,'0') + '-' + String(o.getDate()).padStart(2,'0');
+            }
+            return '';
+        }
+        // Раньше при листании месяцев выбранной оставалась сегодняшняя дата, и под другим
+        // месяцем показывались слоты на сегодня. Теперь выбор переезжает в показанный месяц.
+        function go(delta) {
+            const nm = new Date(state.month.getFullYear(), state.month.getMonth() + delta, 1);
+            if (nm < minMonth() || nm > maxMonth()) return;
+            state.month = nm;
+            const ym = nm.getFullYear() + '-' + String(nm.getMonth()+1).padStart(2,'0');
+            if (!state.selDate || state.selDate.slice(0, 7) !== ym) state.selDate = firstBookable(nm);
+            render();
+            onSelect(state.selDate);
+        }
         return {
             state: state,
             render: render,
-            prev: function () { state.month = new Date(state.month.getFullYear(), state.month.getMonth() - 1, 1); render(); },
-            next: function () { state.month = new Date(state.month.getFullYear(), state.month.getMonth() + 1, 1); render(); },
+            prev: function () { go(-1); },
+            next: function () { go(1); },
             selectToday: function () {
                 state.month = new Date(today.getFullYear(), today.getMonth(), 1);
                 state.selDate = todayStrGlobal();
@@ -942,6 +972,14 @@
             if (authReq && !authReq.classList.contains('hidden')) finishLogin();
         }
     }
+    // Подпись «Доступное время · 25.11 (сегодня):» — чтобы было видно, на какой день слоты.
+    function setTimeLabel(labelId, key, date) {
+        const el = document.getElementById(labelId); if (!el || !date) return;
+        const [, m, d] = date.split('-');
+        const isToday = date === todayStrGlobal();
+        el.innerText = t(key).replace(/:\s*$/, '') + ' · ' + d + '.' + m +
+            (isToday ? (currentLang === 'sr' ? ' (danas)' : ' (сегодня)') : '') + ':';
+    }
     function addHours(timeStr, n) { const [h,m] = timeStr.split(':').map(Number); return String(h+n).padStart(2,'0') + ':' + String(m).padStart(2,'0'); }
     function isPastSlot(date, time) {
         const today = new Date(); const todayStr = today.getFullYear() + '-' + String(today.getMonth()+1).padStart(2,'0') + '-' + String(today.getDate()).padStart(2,'0');
@@ -1004,6 +1042,7 @@
         const court = type === 'coach' ? selectedCoachCourt : document.getElementById(selId).value;
         if (!date) { document.getElementById(contId).classList.add('hidden'); return; }
         document.getElementById(contId).classList.remove('hidden');
+        setTimeLabel(type === 'court' ? 'lbl-court-time' : 'lbl-coach-time', type === 'court' ? 'courtTime' : 'coachTime', date);
         document.getElementById(noteId).classList.add('hidden');
         if (type === 'coach') document.getElementById('coach-survey').classList.add('hidden');
         selectedSlots = []; selectedTime = "";
@@ -1013,7 +1052,7 @@
             const btn = document.createElement('div');
             if (isPastSlot(date, time)) {
                 btn.className = 'time-slot past'; btn.innerHTML = time + '<span>' + t('past') + '</span>';
-            } else if (isSlotOccupied(court, date, time)) {
+            } else if (isRangeOccupied(court, date, time, 1)) {
                 btn.className = 'time-slot occupied'; btn.innerHTML = time + '<span>' + t('occupied') + '</span>';
             } else {
                 btn.className = 'time-slot'; btn.innerHTML = time + '<span>' + t('free') + '</span>';
@@ -1033,7 +1072,7 @@
             if (selectedSlots.length > 0) {
                 const expectedNext = addHours(selectedSlots[selectedSlots.length - 1], 1);
                 if (time !== expectedNext) { tg.showAlert(t('consecutive')); return; }
-                if (isSlotOccupied(court, date, time)) { tg.showAlert(t('alertOccupied')); return; }
+                if (isRangeOccupied(court, date, time, 1)) { tg.showAlert(t('alertOccupied')); return; }
             }
             selectedSlots.push(time); btn.classList.add('selected'); btn.querySelector('span').innerText = selectedSlots.length + ' ' + t('hrs');
         }
@@ -1067,6 +1106,7 @@
         const cont = document.getElementById('court-slots-container');
         if (!date) { cont.classList.add('hidden'); return; }
         cont.classList.remove('hidden');
+        setTimeLabel('lbl-court-time', 'courtTime', date);
         selectedCourtTime = '';
         const grid = document.getElementById('court-time-grid'); grid.innerHTML = '';
         // Получасовая сетка старта нужна только для 1.5ч (чтобы попасть в освободившиеся ХХ:30
@@ -1113,7 +1153,7 @@
         await refreshBookings();
         if (isCoach) {
             for (let i = 0; i < duration; i++) {
-                if (isSlotOccupied(court, date, addHours(time, i))) {
+                if (isRangeOccupied(court, date, addHours(time, i), 1)) {
                     tg.showAlert(t('alertOccupied')); generateSlots(type); btn.disabled = false; btn.innerText = orig; return;
                 }
             }
@@ -1277,8 +1317,10 @@
         generateRescheduleSlots();
     }
     function generateRescheduleSlots() {
-        const date = rescheduleCal.state.selDate; if (!date) return;
+        const date = rescheduleCal.state.selDate;
+        if (!date) { document.getElementById('reschedule-slots-container').classList.add('hidden'); selectedTime = ''; return; }
         document.getElementById('reschedule-slots-container').classList.remove('hidden');
+        setTimeLabel('lbl-reschedule-time', 'rescheduleTime', date);
         const grid = document.getElementById('reschedule-time-grid'); grid.innerHTML = ''; selectedTime = '';
         const court = rescheduleData.court;
         const slotList = (rescheduleDuration === 1.5) ? courtTimeSlots : baseTimeSlots;
@@ -1300,19 +1342,17 @@
         const newDate = rescheduleCal.state.selDate; if (!newDate) return tg.showAlert(t('alertDateTime'));
         const btn = document.getElementById('reschedule-submit'); btn.disabled = true; btn.innerText = t('sending');
         try {
-            // 1) создаём новую бронь (возможно, с другой длительностью, чем была)
-            const create = await (await post({
-                action: 'book', court: rescheduleData.court, date: newDate, time: selectedTime,
-                duration: rescheduleDuration, service: rescheduleData.service,
-                clientId: userId, clientName: userName, phone: userPhone, username: userUsername, notes: ''
+            // Один атомарный запрос: сервер проверяет правило 12 часов и занятость и переносит
+            // ту же бронь. Раньше создавалась новая бронь, а потом отменялась старая: если отмена
+            // не проходила (например, меньше 12 часов), у ученика оставались две брони.
+            const res = await (await post({
+                action: 'reschedule', id: rescheduleData.id, date: newDate, time: selectedTime, duration: rescheduleDuration
             })).json();
-            if (!create || !create.ok) {
-                tg.showAlert(create && create.error === 'past' ? t('alertPast') : t('alertOccupied'));
+            if (!res || !res.ok) {
+                const e = res && res.error;
+                tg.showAlert(e === 'past' ? t('alertPast') : e === 'too_late' ? t('tooLate') : e === 'occupied' ? t('alertOccupied') : t('saveFail'));
                 btn.disabled = false; btn.innerText = t('rescheduleBtn'); return;
             }
-            // 2) отменяем старую по id
-            const cancel = await (await post({ action: 'cancel', id: rescheduleData.id })).json();
-            if (cancel && cancel.error === 'too_late') { tg.showAlert(t('tooLate')); }
             await refreshBookings();
             document.getElementById('result-text').innerHTML =
                 '🔄 <b>' + t('moved') + '</b><br><br><b>' + (rescheduleData.service === 'coach' ? coachWith(rescheduleData.court) : (t('courtRent') + ' · ' + rescheduleData.court)) + '</b><br>📅 ' + formatDate(newDate) + ' · ' + selectedTime + ' · ' + courtDurLabel(rescheduleDuration);
